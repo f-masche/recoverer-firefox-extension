@@ -1,0 +1,2 @@
+recoverer-firefox-extension
+===========================
