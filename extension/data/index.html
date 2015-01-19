@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Recoverer</title>
+    <meta charset="utf-8"/>     
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+  </head>
+  <body>
+    <div class="side-bar">
+      <ul id="supported-sites">
+        <!-- supported websites -->
+      </ul>
+    </div>
+
+    <div class="content">
+
+      <div class="center-panel">
+
+        <div id="home-view">
+          <h3>Welcome to Recoverer</h3>
+          <p>Please choose a site to sign in to.</p>
+        </div>
+
+        <div id="login-view" class="hidden">
+          <h3>Sign in to <span id="task-name"></span></h3>
+          <p class="text-info">Only Gmail accounts supported at the moment</p>
+          <div id="error-message" class="alert alert-danger hidden"></div>
+          <form id="gmail-login-form">
+            <div class="form-group">
+              <label for="gmail-email">Gmail address:</label>
+              <input class="form-control" type="email" id="gmail-email" name="gmail-email" required/>
+            </div>
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+          </form>
+        </div>
+
+        <div id="pending-view" class="hidden">
+          <button id="cancel-button" class="btn btn-danger">Cancel</button>
+          <div id="pending-spinner" class="spinner center-block"></div>
+          <form id="captcha-form" class="hidden">
+            <h3> Please solve this captcha to continue </h3>
+            <div class="form-group" id="captcha-box">
+              <!-- captcha image -->
+            </div>
+            <div class="form-group">
+              <input class="form-control" type="text" name="captcha"/>
+            </div>
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Ok</button>
+          </form>
+          <p id="pending-message" class="text-center"></p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

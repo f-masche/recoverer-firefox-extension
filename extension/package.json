@@ -1,0 +1,10 @@
+{
+  "name": "recoverer",
+  "title": "recoverer",
+  "id": "jid1-pOcTkVwAjVlyBA@jetpack",
+  "description": "a basic add-on",
+  "author": "Fabian Maschewski",
+  "license": "MPL 2.0",
+  "version": "0.0.1",
+  "main": "lib/bootstrap.js"
+}
