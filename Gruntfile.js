@@ -2,11 +2,11 @@
 
 module.exports = function(grunt) {
 
+  var config = grunt.file.readJSON("config.json");
+
   // Project configuration.
   grunt.initConfig({
     pkg: grunt.file.readJSON("package.json"),
-
-    config: grunt.file.readJSON("config.json"),
 
     watch: {
       js: {
@@ -63,7 +63,9 @@ module.exports = function(grunt) {
           "mozilla-addon-sdk": "latest",
           extension_dir: "extension", // jshint ignore:line
           command: "test",
-          arguments: "-b  <%= config.firefox.bin %> --profiledir <%= config.firefox.profile %>",
+          arguments: 
+            (config.firefox.bin ? "-b " + config.firefox.bin : "") +
+            (config.firefox.profile ? "--profiledir " + config.firefox.profile  : ""),
           pipe_output: true // jshint ignore:line
         }
       },

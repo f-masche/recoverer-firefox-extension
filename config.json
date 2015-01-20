@@ -1,6 +1,6 @@
 {
   "firefox":  {
-    "bin": "firefox",
+    "bin": "/usr/bin/firefox",
     "profile": ""
   }
 }
