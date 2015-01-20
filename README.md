@@ -1,4 +1,4 @@
-# Recoverer
+# Recoverer [![Build Status](https://travis-ci.org/pyche/recoverer-firefox-extension.svg?branch=master)](https://travis-ci.org/pyche/recoverer-firefox-extension)
 
 Recoverer is an Firefox-Extension that lets you log on to websites 
 using the password recovery. It generates a new secure password each time you login.   
