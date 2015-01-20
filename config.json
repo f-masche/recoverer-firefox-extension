@@ -1,6 +1,6 @@
 {
   "firefox":  {
-    "bin": "/Applications/FirefoxNightly.app",
-    "profile": "/Users/fabian/Library/Application\\ Support/FirefoxProfiles/3q64ni9j.dev-nightly"
+    "bin": "firefox",
+    "profile": ""
   }
 }
