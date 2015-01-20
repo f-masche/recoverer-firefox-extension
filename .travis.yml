@@ -1,16 +1,12 @@
-language: ruby
-
-rvm:
-  - 2.1.1
-
+language: node_js
+node_js:
+  - 0.10
 before_script:
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
-  - bundle install
+  - gem install sass
   - npm install -g grunt-cli
   - npm install
-
 addons:
   firefox: "35.0"
-
 script: grunt build
