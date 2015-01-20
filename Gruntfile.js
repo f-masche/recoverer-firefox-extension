@@ -48,6 +48,18 @@ module.exports = function(grunt) {
       } 
     },
 
+    sass: {                        
+      build: {
+        options: {                 
+          style: "expanded",
+        },
+        files: {        
+          "extension/data/content.css": "extension/sass/content.scss",     
+          "extension/data/style.css": "extension/sass/main.scss"
+        }
+      }
+    },
+
     "mozilla-addon-sdk": {
       "latest": {
         options: {
@@ -65,7 +77,7 @@ module.exports = function(grunt) {
           command: "test",
           arguments: 
             (config.firefox.bin ? "-b " + config.firefox.bin : "") +
-            (config.firefox.profile ? "--profiledir " + config.firefox.profile  : ""),
+            (config.firefox.profile ? " --profiledir " + config.firefox.profile  : ""),
           pipe_output: true // jshint ignore:line
         }
       },
@@ -75,8 +87,9 @@ module.exports = function(grunt) {
           "mozilla-addon-sdk": "latest",
           extension_dir: "extension", // jshint ignore:line
           command: "run",
-          arguments: "-b  <%= config.firefox.bin %> --profiledir <%= config.firefox.profile %>",
-          pipe_output: true // jshint ignore:line
+          arguments: 
+            (config.firefox.bin ? "-b " + config.firefox.bin : "") +
+            (config.firefox.profile ? " --profiledir " + config.firefox.profile  : ""),          pipe_output: true // jshint ignore:line
         }
       }
     },
@@ -96,11 +109,12 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks("grunt-html-validation");
   grunt.loadNpmTasks("grunt-contrib-jshint");
   grunt.loadNpmTasks("grunt-contrib-watch");
+  grunt.loadNpmTasks("grunt-contrib-sass");
   grunt.loadNpmTasks("grunt-mozilla-addon-sdk");
 
   // Register task.
-  grunt.registerTask("default", ["jshint:all", "validation", "mozilla-addon-sdk", "mozilla-cfx:test", "mozilla-cfx:run"]);
-  grunt.registerTask("test", [ "jshint:all", "validation", "mozilla-addon-sdk", "mozilla-cfx:test"]);
+  grunt.registerTask("default", ["jshint:all", "validation", "sass", "mozilla-addon-sdk", "mozilla-cfx:run"]);
+  grunt.registerTask("test", [ "jshint:all", "validation", "sass", "mozilla-addon-sdk", "mozilla-cfx:test"]);
   grunt.registerTask("build", ["test", "mozilla-cfx-xpi:stable"]);
 
 };

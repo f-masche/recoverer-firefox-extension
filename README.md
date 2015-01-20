@@ -1,9 +1,11 @@
 # Recoverer [![Build Status](https://travis-ci.org/pyche/recoverer-firefox-extension.svg?branch=master)](https://travis-ci.org/pyche/recoverer-firefox-extension)
 
-Recoverer is an Firefox-Extension that lets you log on to websites 
-using the password recovery. It generates a new secure password each time you login.   
+Recoverer is a Firefox-Extension that lets you log on to websites 
+using the password recovery function.  
+It generates a new secure password every time you login.   
+
 For research purpose only, so don't expect everything to work smoothly.     
-Uses the GMail-API, so only GMail-Accounts are supported.
+Uses the GMail-API, so only GMail-Accounts are supported at the moment.
 
 ##Currently supported websites
 

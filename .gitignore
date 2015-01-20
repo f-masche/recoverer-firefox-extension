@@ -2,4 +2,6 @@ build
 build_tools
 validation-status.json
 node_modules
+.sass_cache
 .DS_Store
+*.css

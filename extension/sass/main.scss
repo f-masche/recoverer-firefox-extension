@@ -1,0 +1,25 @@
+/**
+* This is the stylesheet for the main plugin window
+*/
+
+$body-bg: #F3F3F3;
+
+@import "bootstrap-3.3.2/bootstrap";
+
+.center-panel {
+  @extend .row;
+
+  width: 350px;
+  margin: 40px auto 0 auto;
+}
+
+.spinner {
+  $spinner-img: "spiffygif_38x38.gif";
+  $spinner-size: 38px;
+
+  display: block;
+  width: $spinner-size;
+  height: $spinner-size;
+  margin-bottom: 16px;
+  background-image: url($spinner-img);
+}
