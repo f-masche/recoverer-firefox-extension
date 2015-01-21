@@ -5,10 +5,8 @@ const views = {
   pending: $("#pending-view")
 };
 
-const $gmailLoginForm = $("#gmail-login-form");
 const $gmailEmail = $("#gmail-email");
 const $taskName = $("#task-name");
-
 const $captchaForm = $("#captcha-form");
 const $pendingMessage = $("#pending-message");
 const $errorMessage = $("#error-message");
@@ -17,14 +15,10 @@ const $supportedSitesList = $("#supported-sites");
 
 let $currentView = null;
 
+//add event handlers
+
 $supportedSitesList.on("click", "li > a", function() {
   self.port.emit("clickedOnTask", this.textContent);
-});
-
-$gmailLoginForm.on("submit", function(event) {
-  self.port.emit("submitedLoginForm", $gmailEmail.val());
-  $gmailEmail.val("");
-  event.preventDefault();
 });
 
 $captchaForm.on("submit", function(event) {
@@ -38,9 +32,23 @@ $captchaForm.on("submit", function(event) {
   event.preventDefault();
 });
 
+$("#gmail-login-form").on("submit", function(event) {
+  self.port.emit("submitedLoginForm", $gmailEmail.val());
+  $gmailEmail.val("");
+  event.preventDefault();
+});
+
+$("#login-to-home-btn").on("click", function(event) {
+  showView("home");
+  event.preventDefault();
+});
+
 $("#cancel-button").on("click", function() {
   self.port.emit("cancelButtonClicked");
 });
+
+
+//attach port listeners
 
 self.port.on("setSupportedSites", function(siteNames) {
   $supportedSitesList.children().remove();

@@ -1,260 +1,386 @@
 const { Page } = require("sdk/page-worker"); 
 const { setTimeout, clearTimeout } = require("sdk/timers");
-
+const { Class } = require("sdk/core/heritage");
 
 const TAG = "scraper:";
 
-function ScraperFactory(url, captchaSolver) {
 
-  console.log("new scraper on: " + url);
+const Action = Class({
 
-  let stack = [];
+  initialize: function(scraper, name) {
+    this.scraper = scraper;
+    this.name = name;
+  },
 
-  let resultMap = {};
-
-  let running = false;
-
-  let currentUrl = url;
-
-  const worker = Page({
-    contentScriptFile: "./scraper.js",
-    contentURL: url,
-    contentScriptWhen: "ready"
-  }); 
-
-
-  worker.port.on("loaded", function(url) {
-    currentUrl = url;
-  });
-
-  //wait for initial loading
-  createWaitForLoadingAction();
-
-
-  function createClickOnAction(selector) {
-
-    stack.push(function(resolve, reject) {
-
-      console.log("scraper: clicking on " + selector);
-
-      worker.port.emit("clickOn", selector);
-
-      worker.port.once("clickedOn", function(error) {
-
-        if(error) {
-          console.log(TAG, error);
-          reject("Could not click on " + selector);
-        } else {
-          console.log(TAG, "clicked on " + selector);
-
-          resolve();
-        }
-      });
-    });
-
-    return this;
+  run: function() {
+    return new Promise(this.callback.bind(this));
   }
+});
 
-  function createFindTextAction(selector, resultKey) {
 
-    stack.push(function(resolve, reject) {
-      console.log("scraper: searching text in " + selector);
+const WaitForLoadingAction = Class({
 
-      worker.port.emit("findText", selector);
+  extends: Action,
 
-      worker.port.once("foundText", function(text, error) {
+  initialize: function(scraper, selector) {
+    Action.prototype.initialize.call(this, scraper, "waitForLoading");
+    this.selector = selector;
+  },
 
-        if(error) {
-          console.log(TAG, error);
-          reject("Could not find text in " + selector);
-        } else {
-          console.log(TAG, "found text: " + text);
-          resultMap[resultKey] = text;
-          resolve(text);
-        }
-      });
+  callback: function(resolve, reject) {
+    console.log("scraper: waiting for load");
+
+    const timeoutId = setTimeout(function() {
+      console.error(TAG, "timed out while waiting for page to load");
+      reject("Timed out while waiting for page to load");
+    }, 5000);
+
+    this.scraper._worker.port.once("loaded", function(url) {
+      console.log(TAG, "loaded " + url);
+      clearTimeout(timeoutId);
+      resolve(url);
     });
-
-    return this;
   }
+});
 
-  function createFindAttributeAction(selector, attributeName, resultKey) {
 
-    stack.push(function(resolve, reject) {
-      console.log("scraper: searching attribute " + attributeName + " on " + selector);
+const GetTextAction = Class({
 
-      worker.port.emit("findAttribute", selector, attributeName);
+  extends: Action,
 
-      worker.port.once("foundAttribute", function(value, error) {
+  initialize: function(scraper, selector) {
+    Action.prototype.initialize.call(this, scraper, "getText");
+    this.selector = selector;
+  },
 
-        if(error) {
-          console.log(TAG, "could not find attribute " + value);
-          reject("Could not find attribute " + attributeName + " on " + selector);
-        } else {
-          console.log(TAG, "found attribute " + value);
-          resultMap[resultKey] = value;
-          resolve(value);
-        }
-      });
+  callback: function(resolve, reject) {
+    const self = this;
+
+    console.log(TAG, "searching text in " + this.selector);
+
+    this.scraper._worker.port.emit("getText", this.selector);
+
+    this.scraper._worker.port.once("gotText", function(text, error) {
+      if (error) {
+        console.log(TAG, error);
+        reject("Could not get text in " + self.selector);
+      } else {
+        console.log(TAG, "Got text: " + text);
+        self.scraper.results.push(text);
+        resolve(text);
+      }
     });
-
-    return this;
   }
+});
 
-  function createFillInAction(selector, value) {
 
-    stack.push(function(resolve, reject) {
-      fillInHandler(resolve, reject, selector, value);
-    });
+const FillInAction = Class({
 
-    return this;
-  }
+  extends: Action,
 
-  function fillInHandler(resolve, reject, selector, value) {
-    console.log("scraper: filling in value " + value + " in to " + selector);
+  initialize: function(scraper, selector, value) {
+    Action.prototype.initialize.call(this, scraper, "fillIn");
+    this.selector = selector;
+    this.value = value;
+  },
 
-    worker.port.emit("fillIn", selector, value);
+  callback: function(resolve, reject) {
+    const self = this;
 
-    worker.port.once("filledIn", function(error) {
+    console.log(TAG, "filling in value " + this.value + " in to " + this.selector);
+
+    this.scraper._worker.port.emit("fillIn", this.selector, this.value);
+
+    this.scraper._worker.port.once("filledIn", function(error) {
       if(error) {
         console.log(TAG, error);
-        reject("Could not fill in " + value + " into " + selector);
+        reject("Could not fill in " + self.value + " into " + self.selector);
       } else {
-        console.log(TAG, "filled in value " + value + " in to " + selector);
+        console.log(TAG, "filled in value " + self.value + " in to " + self.selector);
         resolve();
       }
     });
   }
+});
 
-  function createCheckAction(selector) {
-    createFillInAction(selector, true);
-    return this;
+
+const ClickOnAction = Class({
+
+  extends: Action,
+
+  initialize: function(scraper, selector) {
+    Action.prototype.initialize.call(this, scraper, "clickOn");
+    this.selector = selector;
+  },
+
+  callback: function(resolve, reject) {
+    const self = this;
+
+    console.log(TAG, "clicking on " + this.selector);
+
+    this.scraper._worker.port.emit("clickOn", this.selector);
+
+    this.scraper._worker.port.once("clickedOn", function(error) {
+      if(error) {
+        console.log(TAG, error);
+        reject("Could not click on " + self.selector);
+      } else {
+        console.log(TAG, "clicked on " + self.selector);
+        resolve();
+      }
+    });
   }
+});
 
-  function createSolveCaptchaAction(captchaImgSelector, captchaInputSelector) {
 
-    createFindAttributeAction(captchaImgSelector, "src", "_captchaSrc");
+const GetAttributeAction = Class({
 
-    stack.push(function(resolve, reject) {
-      captchaSolver.solveCaptcha(resultMap._captchaSrc)
-        .then(function(solution) {
-          resultMap._captchaSolution = solution;
-          resolve();
+  extends: Action,
+
+  initialize: function(scraper, selector, attribute) {
+    Action.prototype.initialize.call(this, scraper, "getAttribute");
+    this.selector = selector;
+    this.attribute = attribute;
+  },
+
+  callback: function(resolve, reject) {
+    const self = this;
+
+    console.log(TAG, "get attribute " + this.attribute + " on " + this.selector);
+
+    this.scraper._worker.port.emit("getAttribute", this.selector, this.attribute);
+
+    this.scraper._worker.port.once("gotAttribute", function(value, error) {
+
+      if (error) {
+        console.log(TAG, "could not find attribute " + value);
+        reject("Could not find attribute " + self.attribute + " on " + self.selector);
+      } else {
+        console.log(TAG, "found attribute " + value);
+        self.scraper.results.push(value);
+        resolve(value);
+      }
+    });
+  }
+});
+
+
+const SolveCaptchaAction = Class({
+
+  extends: Action,
+
+  initialize: function(scraper, captchaImgSelector, captchaInputSelector, captchaSolver) {
+    Action.prototype.initialize.call(this, scraper, "solveCaptcha");
+    this.captchaImgSelector = captchaImgSelector;
+    this.captchaInputSelector = captchaInputSelector;
+    this.captchaSolver = captchaSolver;
+  },
+
+  callback: function(resolve, reject) {
+    const self = this;
+
+    this.scraper._worker.port.emit("getAttribute", this.captchaImgSelector, "src");
+
+    this.scraper._worker.port.on("gotAttribute", function(value, error) {
+
+      if(error) {
+        console.log(TAG, "Could not find captcha image :" + self.captchaImgSelector);
+        reject("Could not find captcha image :" + self.captchaImgSelector);
+      } else {
+
+        self.scraper._captchaSolver.solveCaptcha(value).then(function(solution) {
+
+          self.scraper._worker.port.emit("fillIn", self.captchaInputSelector, solution);
+
+          self.scraper._worker.port.once("filledIn", function(error) {
+            if(error) {
+              console.log(TAG, "Could not find captcha input field: " + self.captchaInputSelector);
+              reject("Could not find captcha input field: " + self.captchaInputSelector);
+            } else {
+              resolve(solution);
+            }
+          });
+
         }, reject);
+      }
     });
-
-    stack.push(function(resolve, reject) {
-      fillInHandler(resolve, reject, captchaInputSelector, resultMap._captchaSolution);
-    });
-
-    return this;
   }
+});
 
-  function createWaitForLoadingAction() {
 
-    stack.push(function(resolve, reject) {
-      console.log("scraper: waiting for load");
+const WaitForElementAction = Class({
 
-      const timeoutId = setTimeout(function() {
-        console.error(TAG, "timed out while waiting for page to load");
-        reject("Timed out while waiting for page to load");
-      }, 5000);
+  extends: Action,
 
-      worker.port.once("loaded", function(url) {
-        console.log(TAG, "loaded " + url);
-        clearTimeout(timeoutId);
-        resolve(url);
-      });
+  initialize: function(scraper, selector) {
+    Action.prototype.initialize.call(this, scraper, "waitForElement");
+    this.selector = selector;
+  },
+
+  callback: function(resolve, reject) {
+    console.log(TAG, "Waiting for element " + this.selector);
+
+    const self = this;
+    const time = 2000;
+
+    let timeoutId = -1;
+
+    this.scraper._worker.port.emit("waitForElement", this.selector, time);
+
+    const handler = function(error) {
+      console.log(TAG, "Waited for element " + this.selector);
+      clearTimeout(timeoutId);
+
+      if(error) {
+        console.log(TAG, "Timed out while waiting for element " + self.selector);
+        reject("Timed out while waiting for element " + self.selector);
+      } else {
+        resolve();
+      }
+    };
+
+    this.scraper._worker.port.once("waitedForElement", handler);
+  
+    //set a second timeout independent to the content script
+    //the content script could be unloaded so the event never gets fired
+    timeoutId = setTimeout(function() {
+      self.scraper._worker.port.off("waitedForElement", handler);
+      console.log(TAG, "Timed out while waiting for element " + self.selector);
+      reject("Timed out while waiting for element " + self.selector);
+    }, time * 1.5);
+  }
+});
+
+
+const ThenAction = Class({
+
+  extends: Action,
+
+  initialize: function(scraper, onResolve, onReject) {
+    Action.prototype.initialize.call(this, scraper, "then");
+    this.onResolve = onResolve;
+    this.onReject = onReject;
+
+    this.scraper._stackInsertIndex -= 1;
+    this.lastAction = this.scraper._stack.splice(this.scraper._stackInsertIndex, 1)[0];
+  },
+
+  run: function() {
+    this.scraper._stackInsertIndex = 0;
+    return this.lastAction.run().then(this.onResolve, this.onReject);
+  }
+});
+
+
+
+const Scraper =  Class({
+
+  initialize: function(url, captchaSolver) {
+    const self = this;
+
+    this.results = [];
+    this._captchaSolver = captchaSolver;
+    this._stack = [];
+    this._stackInsertIndex = 0;
+
+    this._worker = Page({
+      contentScriptFile: ["./zepto.js","./scraper.js"],
+      contentURL: url,
+      contentScriptWhen: "ready"
+    }); 
+
+    this._worker.port.on("loaded", function(url) {
+      self.url = url;
     });
 
+    //wait for initial loading
+    this.waitForLoading();
+
+    console.log(TAG, "new scraper on: " + url);
+  },
+
+  waitForLoading: function() {
+    this._addAction(WaitForLoadingAction(this));
     return this;
-  }
+  },
 
-  function createWaitForElementAction(selector, timeout) {
-
-    stack.push(function(resolve, reject) {
-      console.log(TAG, "waiting for element " + selector);
-      let timeoutId = -1;
-
-      worker.port.emit("waitForElement", selector);
-
-      const handler = function(error) {
-        console.log(TAG, "waited for element " + selector);
-        clearTimeout(timeoutId);
-
-        if(error) {
-          console.log(TAG, "timed out while waiting for element " + selector);
-          reject("Timed out while waiting for element " + selector);
-        } else {
-          resolve();
-        }
-      };
-
-      worker.port.once("waitedForElement", handler);
-    
-      //set a second timeout independent to the content script
-      //the content script could be unloaded so the event never gets fired
-      timeoutId = setTimeout(function() {
-        worker.port.off("waitedForElement", handler);
-        console.log(TAG, "timed out while waiting for element " + selector);
-        reject("Timed out while waiting for element " + selector);
-      }, timeout);
-    });
-
+  waitForElement: function(selector) {
+    this._addAction(WaitForElementAction(this, selector));
     return this;
-  }
+  },
 
-  function run() {
-    if(running) {
+  fillIn: function(selector, value) {
+    this._addAction(FillInAction(this, selector, value));
+    return this;
+  },
+
+  check: function(selector) {
+    return this.fillIn(selector, true);
+  },
+
+  clickOn: function(selector) {
+    this._addAction(ClickOnAction(this, selector));
+    return this;
+  },
+
+  solveCaptcha: function(captchaImgSelector, captchaInputSelector) {
+    this._addAction(SolveCaptchaAction(this, captchaImgSelector, captchaInputSelector));
+    return this;
+  },
+
+  getText: function(selector) {
+    this._addAction(GetTextAction(this, selector));
+    return this;
+  },
+
+  getAttribute: function(selector, attribute) {
+    this._addAction(GetAttributeAction(this, selector, attribute));
+    return this;
+  },
+
+  then: function(onResolve, onReject) {
+    this._addAction(ThenAction(this, onResolve, onReject));
+  },
+
+  run: function() {
+    if(this._running) {
       throw new Error("This scraper is already running");
     }
 
-    running = true;
+    const self = this;
+
+    this._running = true;
     console.log(TAG, "started");
 
     function runAction() {
-      console.log(TAG, "stack size = " + stack.length);
+      console.log(TAG, "stack size = " + self._stack.length);
 
-      if(stack.length) {
-        let action = stack.shift();
-        return new Promise(action).then(runAction);
+      if(self._stack.length) {
+        let action = self._stack.shift();
+
+        console.log(TAG, "running " + action.name);
+
+        if(self._stackInsertIndex > 0) {
+          self._stackInsertIndex -= 1;
+        }
+        return action.run().then(runAction);
       } else {
         console.log(TAG, "finished");
-        let result = Promise.resolve(resultMap);
-        resultMap = {};
-        running = false;
+        let result = Promise.resolve(self.results);
+        self.results = [];
+        self._running = false;
         return result;
       }
     }
 
     return runAction();
+  },
+
+  _addAction: function(action) {
+    console.log(TAG, "add action: " + action.name);
+    this._stack.splice(this._stackInsertIndex, 0, action);
+    this._stackInsertIndex += 1; 
   }
+});
 
-  return {
-    clickOn: createClickOnAction,
-    fillIn: createFillInAction,
-    check: createCheckAction,
-    waitForLoading: createWaitForLoadingAction,
-    waitForElement: createWaitForElementAction,
-    findText: createFindTextAction,
-    findAttribute: createFindAttributeAction,
-    solveCaptcha: createSolveCaptchaAction,
-    getCurrentUrl: function() {
-      return currentUrl;
-    },
-    getCurrentResults: function() {
-      return resultMap;
-    },
-    run: run,
-    then: function(resolved, rejected) {
-      const action = stack.pop();
-      stack.push(function(resolve, reject) {
-        new Promise(action)
-          .then(resolved, rejected)
-          .then(resolve, reject);
-      });
-    }
-  };
-}
-
-exports.Scraper = ScraperFactory;
+exports.Scraper = Scraper;

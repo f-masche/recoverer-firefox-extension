@@ -33,11 +33,6 @@ const githubTask = Task({
       .fillIn("#password", password)
       .clickOn("#login .auth-form-body input[type=submit]")
       .waitForLoading();
-  },
-
-  getResetLinkFromMessage: function(messageText) {
-    const matches = messageText.match();
-    return matches && matches[0];
   }
 });
 

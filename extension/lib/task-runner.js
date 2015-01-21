@@ -60,10 +60,6 @@ const TaskRunner = Class({
       .then(function() {
         return self._login();
       })
-      .then(function() {
-        self._setStatus("loggedIn");
-        return Promise.resolve();
-      })
       .catch(function(error) {
         self._setStatus("error", error);
       });
@@ -115,7 +111,6 @@ const TaskRunner = Class({
   _login: function() {
     if(this.canceled) {
       this._setStatus("canceled");
-
       return Promise.reject("canceled");
     } else {
       const scraper = Scraper(this.task.loginUrl, this.captchaSolver);
@@ -124,7 +119,8 @@ const TaskRunner = Class({
       this.task.login(scraper, this.email, this.password);
 
       return scraper.run().then(function() {
-        self.loginTab.url = scraper.getCurrentUrl();
+        self.loginTab.url = scraper.url;
+        self._setStatus("loggedIn");
         return Promise.resolve();
       });
     }

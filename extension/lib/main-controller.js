@@ -3,6 +3,7 @@ const { TaskRunner } = require("task-runner");
 const { GmailMessageSource } = require("gmail-message-source");
 const tasks = require("tasks");
 
+const TAG = "main controller:";
 
 const UserCaptchaSolver = Class({
   initialize: function(worker) {
@@ -45,6 +46,15 @@ const MainController = Class({
       const task = tasks.getTaskForName(taskName);
       self.setTask(task);
     });
+
+    worker.on("detach", function () {
+      if(self.taskRunner) {
+        self.taskRunner.cancel();
+      }
+      console.log(TAG, "detach");
+    });
+
+    console.log(TAG, "new controller");
   },
 
   setTask : function(task) {
@@ -68,21 +78,34 @@ const MainController = Class({
     });
 
     const statusUpdateHandler = function(status, message) {
-      console.log(status, message);  
-      if(status === "waitingForMessage") {
-        self.worker.port.emit("setPendingMessage", "Waiting for email");
-      } else if(status === "settingNewPassword")  {
-        self.worker.port.emit("setPendingMessage", "Setting new password");
-      } else if(status === "updatingEmailStatus") {
-        self.worker.port.emit("setPendingMessage", "Marking message as read");
-      } else if(status === "loggedIn" || status === "canceled") {
-        self.taskRunner.off("statusUpdate", statusUpdateHandler);
-      } else if(status === "error") {
-        console.error(message.message);
-        self.worker.port.emit("showErrorMessage", message);
-        self.worker.port.emit("showView", "login");
-        self.taskRunner.off("statusUpdate", statusUpdateHandler);
-      }
+      console.log(TAG, status, message);  
+
+      switch(status) {
+        case "waitingForMessage":
+          self.worker.port.emit("setPendingMessage", "Waiting for email");
+          break;
+        case "settingNewPassword":
+          self.worker.port.emit("setPendingMessage", "Setting new password");
+          break;
+        case "updatingEmailStatus":
+          self.worker.port.emit("setPendingMessage", "Marking message as read");
+          break;
+        case "loggedIn":
+          self.taskRunner.off("statusUpdate", statusUpdateHandler);
+          break;
+        case "canceled":
+          self.worker.port.emit("showView", "login");
+          self.taskRunner.off("statusUpdate", statusUpdateHandler);  
+          break;
+        case "error":
+          console.error(TAG, message.message);
+          self.worker.port.emit("showErrorMessage", message);
+          self.worker.port.emit("showView", "login");
+          self.taskRunner.off("statusUpdate", statusUpdateHandler);
+          break;
+        default:
+          break;
+        }
     };
 
     self.taskRunner.on("statusUpdate", statusUpdateHandler);

@@ -17,51 +17,69 @@ exports["test scraper should find text"] = function(assert, done) {
 
   const scraper = Scraper(self.data.url("./test-1.html"));
 
-  scraper.findText("#text", "text");
-  
+  scraper.getText("#text-1").then(function() {
+    scraper.getText("#text-2").then(function() {
+      scraper.getText("#text-3");
+    });
+
+    scraper.getText("#text-4");
+  });
+
+  scraper.getText("#text-5").then(function() {
+    scraper.getText("#text-6");
+  });
+
+
   scraper.run().then(function(result) {
-    assert.ok(result.text === "test 1");
+    assert.equal(result[0], "text 1");
+    assert.equal(result[1], "text 2");
+    assert.equal(result[2], "text 3");
+    assert.equal(result[3], "text 4");
+    assert.equal(result[4], "text 5");
+    assert.equal(result[5], "text 6");
+
     done();
   });
 };
 
 
-exports["test scraper should fail finding text"] = function(assert, done) {
+exports["test scraper should fail getting text"] = function(assert, done) {
 
   const scraper = Scraper(self.data.url("./test-1.html"));
 
-  scraper.findText("#nothing", "text");
+  scraper.getText("#nothing");
 
   scraper.run().catch(function(error) {
-    console.log("fail", error);
       assert.ok(error);
       done();
     });
 };
 
-exports["test scraper should find attribute"] = function(assert, done) {
+exports["test scraper should get attribute"] = function(assert, done) {
 
   const scraper = Scraper(self.data.url("./test-1.html"));
 
-  scraper.findAttribute("a", "href", "link");
-  
-  scraper.run().then(function(result) {
-    assert.equal(result.link, "test-2.html");
+  scraper.getAttribute("a", "href").then(function(value) {
+    assert.equal(value, "test-2.html");
     done();
   });
+  
+  scraper.run();
 };
 
 
-exports["test scraper should fail finding attribute"] = function(assert, done) {
+exports["test scraper the reject callback should be called"] = function(assert, done) {
 
   const scraper = Scraper(self.data.url("./test-1.html"));
 
-  scraper.findAttribute("body", "href", "link");
+  scraper.getAttribute("body", "href").then(function() {
+    assert.fail();
+  }, function() {
+    assert.ok(true);
+    done();
+  });
 
-  scraper.run().catch(function(error) {
-      assert.ok(error);
-      done();
-    });
+  scraper.run();
 };
 
 exports["test scraper should follow link "] = function(assert, done) {
@@ -72,12 +90,12 @@ exports["test scraper should follow link "] = function(assert, done) {
 
   scraper.waitForLoading();
 
-  scraper.findText("#text", "text");
+  scraper.getText("#page").then(function(text) {
+    assert.equal(text, "2");
+    done();
+  });
 
-  scraper.run().then(function(result) {
-      assert.equal(result.text, "test 2");
-      done();
-    });
+  scraper.run();
 };
 
 
@@ -99,7 +117,7 @@ exports["test scraper should wait for element"] = function(assert, done) {
 
   const scraper = Scraper(self.data.url("./test-1.html"));
 
-  scraper.waitForElement("#text", 1000);
+  scraper.waitForElement("#dynamic", 1000);
 
   scraper.run()
     .then(function() {
@@ -121,38 +139,82 @@ exports["test scraper should timeout waiting for element"] = function(assert, do
     });
 };
 
-exports["test scraper should call then after the last instruction"] = function(assert, done) {
+
+exports["test scraper should fill in a value"] = function(assert, done) {
 
   const scraper = Scraper(self.data.url("./test-1.html"));
 
-  scraper.findText("#text")
-    .then(function(text) {
-      assert.ok(text === "test 1");
-      done();
-    });
+  scraper.fillIn("input[type=text]", "password");
+
+  scraper.getAttribute("input[type=text]", "value").then(function(value) {
+    assert.equal("password", value);
+    done();
+  });
 
   scraper.run();
 };
 
 
-exports["test scraper should find text and follow link"] = function(assert, done) {
+exports["test scraper should fail filling in a value"] = function(assert, done) {
+
   const scraper = Scraper(self.data.url("./test-1.html"));
 
-  scraper.findText("#text", "text1");
+  scraper.fillIn("input[type=password]", "password");
 
-  scraper.clickOn("a");
+  scraper.getAttribute("input[type=password]", "value").then(function() {
+    assert.fail();
+  });
 
-  scraper.waitForLoading();
-
-  scraper.findText("#text", "text2");
-
-  scraper.run().then(function(result) {
-    assert.ok(result.text1 === "test 1" && result.text2 === "test 2");
+  scraper.run().catch(function(error) {
+    assert.ok(error);
     done();
-  }); 
+  });
 };
 
-exports["test scraper should return current url"] = function(assert, done) {
+
+exports["test scraper should solve a captcha"] = function(assert, done) {
+
+  const captchaSolver = {
+    solveCaptcha: function() {
+      return new Promise(function(resolve) {
+        resolve("secret");
+      });
+    }
+  };
+
+  const scraper = Scraper(self.data.url("./test-1.html"), captchaSolver);
+
+  scraper.solveCaptcha("img", "input[type=text]").then(function(solution) {
+    assert.equal("secret", solution);
+
+    scraper.getAttribute("input[type=text]", "value").then(function(value) {
+      assert.equal("secret", value);
+      done();
+    });
+  });
+
+  scraper.run();
+};
+
+exports["test scraper should get text and then follow a link"] = function(assert, done) {
+  const scraper = Scraper(self.data.url("./test-1.html"));
+
+  scraper.getText("#page").then(function(text){
+    assert.equal("1", text);
+
+    scraper.clickOn("a");
+    scraper.waitForLoading();
+
+    scraper.getText("#page").then(function(text) {
+      assert.equal("2", text);
+      done();
+    });
+  });
+
+  scraper.run();
+};
+
+exports["test scraper should save the current url"] = function(assert, done) {
 
   const scraper = Scraper(self.data.url("./test-1.html"));
 
@@ -161,7 +223,7 @@ exports["test scraper should return current url"] = function(assert, done) {
 
   scraper.run()
     .then(function() {
-      assert.equal(scraper.getCurrentUrl(), self.data.url("test-2.html"));
+      assert.equal(scraper.url, self.data.url("test-2.html"));
       done();
     });
 };

@@ -22,8 +22,8 @@ const amazonTask = Task({
       .waitForLoading()
       .clickOn("#ap_small_forgot_password_span a")
       .waitForLoading()
-      .solveCaptcha("#ap_captcha_img > img", "#ap_captcha_guess")
       .fillIn("#ap_email", email)
+      .solveCaptcha("#ap_captcha_img > img", "#ap_captcha_guess")
       .clickOn("#continue-input");
   },
 
@@ -40,10 +40,9 @@ const amazonTask = Task({
       .check("#ap_signin_existing_radio")
       .fillIn("#ap_password", password)
       .clickOn("#signInSubmit-input")
-      .waitForLoading(function(url) {
+      .waitForLoading().then(function(url) {
 
         if(url === "https://www.amazon.de/ap/signin") {
-
           //amazon wants to see that we are no bot
           scraper.fillIn("#ap_email", email)
             .check("#ap_signin_existing_radio")
@@ -53,11 +52,6 @@ const amazonTask = Task({
             .waitForLoading();
         }
       });
-  },
-
-  getResetLinkFromMessage: function(messageText) {
-    const matches = messageText.match(/https:\/\/www.amazon.de\/ap\/forgotpassword\S+/g);
-    return matches && matches[0];
   }
 });
 

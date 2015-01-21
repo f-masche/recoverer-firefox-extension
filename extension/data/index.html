@@ -7,12 +7,6 @@
     <link rel="stylesheet" type="text/css" href="style.css"/>
   </head>
   <body>
-    <div class="side-bar">
-      <ul id="supported-sites">
-        <!-- supported websites -->
-      </ul>
-    </div>
-
     <div class="content">
 
       <div class="center-panel">
@@ -20,6 +14,10 @@
         <div id="home-view">
           <h3>Welcome to Recoverer</h3>
           <p>Please choose a site to sign in to.</p>
+
+          <ul id="supported-sites">
+            <!-- supported websites -->
+          </ul>
         </div>
 
         <div id="login-view" class="hidden">
@@ -31,7 +29,8 @@
               <label for="gmail-email">Gmail address:</label>
               <input class="form-control" type="email" id="gmail-email" name="gmail-email" required/>
             </div>
-            <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+            <button id="login-to-home-btn" class="btn btn-default" type="button">Go back</button>
+            <button class="btn btn-primary" type="submit">Sign in</button>
           </form>
         </div>
 
