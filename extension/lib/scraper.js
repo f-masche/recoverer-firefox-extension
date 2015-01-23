@@ -1,6 +1,9 @@
-const { Page } = require("sdk/page-worker"); 
+//const { Page } = require("sdk/page-worker"); 
 const { setTimeout, clearTimeout } = require("sdk/timers");
 const { Class } = require("sdk/core/heritage");
+const tabs = require("sdk/tabs");
+var { attach } = require("sdk/content/mod");
+var { Style } = require("sdk/stylesheet/style");
 
 const TAG = "scraper:";
 
@@ -13,7 +16,7 @@ const Action = Class({
   },
 
   run: function() {
-    return new Promise(this.callback.bind(this));
+    return new Promise(this.handler.bind(this));
   }
 });
 
@@ -22,23 +25,66 @@ const WaitForLoadingAction = Class({
 
   extends: Action,
 
-  initialize: function(scraper, selector) {
+  initialize: function(scraper) {
     Action.prototype.initialize.call(this, scraper, "waitForLoading");
-    this.selector = selector;
   },
 
-  callback: function(resolve, reject) {
-    console.log("scraper: waiting for load");
+  handler: function(resolve, reject) {
+    console.log(TAG, "Waiting for load");
+
+    const self = this;
 
     const timeoutId = setTimeout(function() {
-      console.error(TAG, "timed out while waiting for page to load");
+      self.scraper._tab.off("ready", onReadyHandler);
+      console.error(TAG, "Timed out while waiting for page to load");
       reject("Timed out while waiting for page to load");
     }, 5000);
 
-    this.scraper._worker.port.once("loaded", function(url) {
-      console.log(TAG, "loaded " + url);
+    const onReadyHandler = function(tab) {
+      console.log(TAG, "Loaded " + tab.url);
+
       clearTimeout(timeoutId);
-      resolve(url);
+      
+      // bugfix
+      // If this is the last action in the stack, firefox throws a
+      // TypeError "can't access dead object"
+      // The source of the error is unknown, but the timeout seems to prevent it
+      setTimeout(function() {
+        resolve(tab.url);
+      }, 1);
+    };
+
+    this.scraper._tab.once("ready", onReadyHandler);
+  }
+});
+
+
+
+const ExpectAction = Class({
+
+  extends: Action,
+
+  initialize: function(scraper, selector) {
+    Action.prototype.initialize.call(this, scraper, "expect");
+    this.selector = selector;
+  },
+
+  handler: function(resolve, reject) {
+    const self = this;
+
+    console.log(TAG, "Looking for " + this.selector);
+
+    this.scraper._worker.port.emit("getElement", this.selector, this.attribute);
+
+    this.scraper._worker.port.once("gotElement", function(error) {
+
+      if (error) {
+        console.log(TAG, "Expected to see " + self.selector);
+        reject("Expected to see " + self.selector);
+      } else {
+        console.log(TAG, "Found " + self.selector);
+        resolve();
+      }
     });
   }
 });
@@ -53,10 +99,10 @@ const GetTextAction = Class({
     this.selector = selector;
   },
 
-  callback: function(resolve, reject) {
+  handler: function(resolve, reject) {
     const self = this;
 
-    console.log(TAG, "searching text in " + this.selector);
+    console.log(TAG, "Looking for text in " + this.selector);
 
     this.scraper._worker.port.emit("getText", this.selector);
 
@@ -74,6 +120,35 @@ const GetTextAction = Class({
 });
 
 
+const GetValueAction = Class({
+
+  extends: Action,
+
+  initialize: function(scraper, selector) {
+    Action.prototype.initialize.call(this, scraper, "getValue");
+    this.selector = selector;
+  },
+
+  handler: function(resolve, reject) {
+    const self = this;
+
+    console.log(TAG, "Looking for value in " + this.selector);
+
+    this.scraper._worker.port.emit("getValue", this.selector);
+
+    this.scraper._worker.port.once("gotValue", function(value, error) {
+      if (error) {
+        console.log(TAG, error);
+        reject("Could not get value in " + self.selector);
+      } else {
+        console.log(TAG, "Got value: " + value);
+        self.scraper.results.push(value);
+        resolve(value);
+      }
+    });
+  }
+});
+
 const FillInAction = Class({
 
   extends: Action,
@@ -84,10 +159,10 @@ const FillInAction = Class({
     this.value = value;
   },
 
-  callback: function(resolve, reject) {
+  handler: function(resolve, reject) {
     const self = this;
 
-    console.log(TAG, "filling in value " + this.value + " in to " + this.selector);
+    console.log(TAG, "Filling in value " + this.value + " in to " + this.selector);
 
     this.scraper._worker.port.emit("fillIn", this.selector, this.value);
 
@@ -96,7 +171,7 @@ const FillInAction = Class({
         console.log(TAG, error);
         reject("Could not fill in " + self.value + " into " + self.selector);
       } else {
-        console.log(TAG, "filled in value " + self.value + " in to " + self.selector);
+        console.log(TAG, "Filled in value " + self.value + " in to " + self.selector);
         resolve();
       }
     });
@@ -113,10 +188,10 @@ const ClickOnAction = Class({
     this.selector = selector;
   },
 
-  callback: function(resolve, reject) {
+  handler: function(resolve, reject) {
     const self = this;
 
-    console.log(TAG, "clicking on " + this.selector);
+    console.log(TAG, "Clicking on " + this.selector);
 
     this.scraper._worker.port.emit("clickOn", this.selector);
 
@@ -125,7 +200,7 @@ const ClickOnAction = Class({
         console.log(TAG, error);
         reject("Could not click on " + self.selector);
       } else {
-        console.log(TAG, "clicked on " + self.selector);
+        console.log(TAG, "Clicked on " + self.selector);
         resolve();
       }
     });
@@ -143,20 +218,20 @@ const GetAttributeAction = Class({
     this.attribute = attribute;
   },
 
-  callback: function(resolve, reject) {
+  handler: function(resolve, reject) {
     const self = this;
 
-    console.log(TAG, "get attribute " + this.attribute + " on " + this.selector);
+    console.log(TAG, "Getting attribute " + this.attribute + " on " + this.selector);
 
     this.scraper._worker.port.emit("getAttribute", this.selector, this.attribute);
 
     this.scraper._worker.port.once("gotAttribute", function(value, error) {
 
       if (error) {
-        console.log(TAG, "could not find attribute " + value);
+        console.log(TAG, "Could not find attribute " + value);
         reject("Could not find attribute " + self.attribute + " on " + self.selector);
       } else {
-        console.log(TAG, "found attribute " + value);
+        console.log(TAG, "Found attribute " + value);
         self.scraper.results.push(value);
         resolve(value);
       }
@@ -176,17 +251,18 @@ const SolveCaptchaAction = Class({
     this.captchaSolver = captchaSolver;
   },
 
-  callback: function(resolve, reject) {
+  handler: function(resolve, reject) {
     const self = this;
 
     this.scraper._worker.port.emit("getAttribute", this.captchaImgSelector, "src");
 
-    this.scraper._worker.port.on("gotAttribute", function(value, error) {
+    this.scraper._worker.port.once("gotAttribute", function(value, error) {
 
       if(error) {
         console.log(TAG, "Could not find captcha image :" + self.captchaImgSelector);
         reject("Could not find captcha image :" + self.captchaImgSelector);
       } else {
+        console.log(TAG, "Found captcha image :" + value);
 
         self.scraper._captchaSolver.solveCaptcha(value).then(function(solution) {
 
@@ -217,7 +293,7 @@ const WaitForElementAction = Class({
     this.selector = selector;
   },
 
-  callback: function(resolve, reject) {
+  handler: function(resolve, reject) {
     console.log(TAG, "Waiting for element " + this.selector);
 
     const self = this;
@@ -231,12 +307,15 @@ const WaitForElementAction = Class({
       console.log(TAG, "Waited for element " + this.selector);
       clearTimeout(timeoutId);
 
-      if(error) {
-        console.log(TAG, "Timed out while waiting for element " + self.selector);
-        reject("Timed out while waiting for element " + self.selector);
-      } else {
-        resolve();
-      }
+      //bugfix @see WaitForLoadingAction#handler
+      setTimeout(function() {
+        if(error) {
+          console.log(TAG, "Timed out while waiting for element " + self.selector);
+          reject("Timed out while waiting for element " + self.selector);
+        } else {
+          resolve();
+        }
+      }, 1);
     };
 
     this.scraper._worker.port.once("waitedForElement", handler);
@@ -278,25 +357,61 @@ const Scraper =  Class({
   initialize: function(url, captchaSolver) {
     const self = this;
 
+    this.url = "";
     this.results = [];
+
     this._captchaSolver = captchaSolver;
     this._stack = [];
     this._stackInsertIndex = 0;
 
+    const initAction = Action(this, "init");
+
+    initAction.handler = function(resolve) {
+      tabs.open({
+        url: url,
+        onOpen: function(tab) {
+          self._tab = tab;
+
+          tab.on("ready", function(tab) {
+            console.log(TAG, "Opened tab");
+            self.url = tab.url;
+            self._worker = tab.attach({
+              contentScriptFile: ["./scraper.js"]
+            });
+          });
+
+          tab.once("ready", function() {
+            //bugfix @see WaitForLoadingAction#handler
+            setTimeout(resolve, 1);
+          });
+        }
+      });
+    };
+
+    this._addAction(initAction);
+
+/*
     this._worker = Page({
-      contentScriptFile: ["./zepto.js","./scraper.js"],
-      contentURL: url,
-      contentScriptWhen: "ready"
-    }); 
+        contentScriptFile: "./scraper.js",
+        contentURL: url,
+        contentScriptWhen: "ready"
+      });
 
     this._worker.port.on("loaded", function(url) {
       self.url = url;
+      console.log("loaded", url);
     });
 
     //wait for initial loading
     this.waitForLoading();
+*/
 
     console.log(TAG, "new scraper on: " + url);
+  },
+
+  expect: function(selector) {
+    this._addAction(ExpectAction(this, selector));
+    return this;
   },
 
   waitForLoading: function() {
@@ -333,6 +448,11 @@ const Scraper =  Class({
     return this;
   },
 
+  getValue: function(selector) {
+    this._addAction(GetValueAction(this, selector));
+    return this;
+  },
+
   getAttribute: function(selector, attribute) {
     this._addAction(GetAttributeAction(this, selector, attribute));
     return this;
@@ -350,6 +470,8 @@ const Scraper =  Class({
     const self = this;
 
     this._running = true;
+    this.results = [];
+
     console.log(TAG, "started");
 
     function runAction() {
@@ -363,17 +485,25 @@ const Scraper =  Class({
         if(self._stackInsertIndex > 0) {
           self._stackInsertIndex -= 1;
         }
+
         return action.run().then(runAction);
       } else {
         console.log(TAG, "finished");
-        let result = Promise.resolve(self.results);
-        self.results = [];
         self._running = false;
-        return result;
+        self._tab.close();
+        return self.results;
       }
     }
 
-    return runAction();
+    return runAction().catch(function(error) {
+      self._running = false;
+
+      const style = Style({ uri: "./content.css" });
+      attach(style, self._tab);
+
+      self._worker.port.emit("showErrorDialog", error);
+      return Promise.reject(error);
+    });
   },
 
   _addAction: function(action) {
