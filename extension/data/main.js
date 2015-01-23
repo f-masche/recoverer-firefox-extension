@@ -1,72 +1,80 @@
-/* globals self, $ */
+/* globals self, document  */
 const views = {
-  home: $("#home-view"),
-  login: $("#login-view"),
-  pending: $("#pending-view")
+  home: document.getElementById("home-view"),
+  login: document.getElementById("login-view"),
+  pending: document.getElementById("pending-view")
 };
 
-const $gmailEmail = $("#gmail-email");
-const $taskName = $("#task-name");
-const $captchaForm = $("#captcha-form");
-const $pendingMessage = $("#pending-message");
-const $errorMessage = $("#error-message");
-const $captchaBox = $("#captcha-box");
-const $supportedSitesList = $("#supported-sites");
+const gmailEmail = document.getElementById("gmail-email");
+const taskName = document.getElementById("task-name");
+const captchaForm = document.getElementById("captcha-form");
+const pendingMessage = document.getElementById("pending-message");
+const errorMessage = document.getElementById("error-message");
+const captchaBox = document.getElementById("captcha-box");
+const supportedSitesList = document.getElementById("supported-sites");
 
-let $currentView = null;
+let currentView = null;
 
 //add event handlers
 
-$supportedSitesList.on("click", "li > a", function() {
-  self.port.emit("clickedOnTask", this.textContent);
-});
-
-$captchaForm.on("submit", function(event) {
-  const $input = $captchaForm.find("input[name=captcha]");
-  self.port.emit("solvedCaptcha", $input.val());
-  $input.val("");
-  $captchaForm.addClass("hidden");
-  $pendingMessage.removeClass("hidden");
-  $("#pending-spinner").removeClass("hidden");
+captchaForm.addEventListener("submit", function(event) {
+  const input = this.querySelector("input[name=captcha]");
+  self.port.emit("solvedCaptcha", input.value);
+  input.value = "";
+  this.classList.add("hidden");
+  
+  pendingMessage.classList.remove("hidden");
+  document.getElementById("pending-spinner").classList.remove("hidden");
 
   event.preventDefault();
 });
 
-$("#gmail-login-form").on("submit", function(event) {
-  self.port.emit("submitedLoginForm", $gmailEmail.val());
-  $gmailEmail.val("");
-  event.preventDefault();
-});
+document.getElementById("gmail-login-form")
+  .addEventListener("submit", function(event) {
+    self.port.emit("submitedLoginForm", gmailEmail.value);
+    gmailEmail.value = "";
+    event.preventDefault();
+  });
 
-$("#login-to-home-btn").on("click", function(event) {
-  showView("home");
-  event.preventDefault();
-});
-
-$("#cancel-button").on("click", function() {
-  self.port.emit("cancelButtonClicked");
-});
+document.getElementById("login-to-home-btn")
+  .addEventListener("click", function(event) {
+    showView("home");
+    event.preventDefault();
+  });
 
 
 //attach port listeners
 
 self.port.on("setSupportedSites", function(siteNames) {
-  $supportedSitesList.children().remove();
+  //clear list 
+  supportedSitesList.innerHTML = "";
 
+  //fill list
   siteNames.forEach(function(name) {
-    $supportedSitesList.append("<li><a href='#'>" + name + "</a></li>");
+
+    const a = document.createElement("a");
+    a.href = "#";
+    a.textContent = name;
+    a.addEventListener("click", onTaskNameClick);
+
+    const li = document.createElement("li");
+    li.appendChild(a);
+
+    supportedSitesList.appendChild(li);
   });
 });
 
 self.port.on("solveCaptcha", function(imageSrc) {
-  $captchaForm.removeClass("hidden");
-  $pendingMessage.addClass("hidden");
-  $("#pending-spinner").addClass("hidden");
+  captchaForm.classList.remove("hidden");
+  pendingMessage.classList.add("hidden");
+  document.getElementById("pending-spinner").classList.remove("hidden");
 
-  const $captchaImg = $("<img class='img-thumbnail center-block' src='" + imageSrc + "' alt='captcha'/>");
+  const captchaImg = document.createElement("img");
+  captchaImg.classList.add("img-thumbnail");
+  captchaImg.src = imageSrc;
 
-  $captchaBox.children().remove();
-  $captchaBox.append($captchaImg);
+  captchaBox.innerHTML = "";
+  captchaBox.appendChild(captchaImg);
 });
 
 self.port.on("showView", function(name) {
@@ -74,18 +82,17 @@ self.port.on("showView", function(name) {
 });
 
 self.port.on("setTask", function(name) {
-  $taskName.text(name);
-  $errorMessage.addClass("hidden");
+  taskName.textContent = name;
+  errorMessage.classList.add("hidden");
 });
 
 self.port.on("setPendingMessage", function(message) {
-  console.log(message);
-  $pendingMessage.text(message);
+  pendingMessage.textContent = message;
 });
 
 self.port.on("showErrorMessage", function(message) {
-  $errorMessage.text(message);
-  $errorMessage.removeClass("hidden");
+  errorMessage.textContent = message;
+  errorMessage.classList.remove("hidden");
 });
 
 showView("home");
@@ -93,14 +100,19 @@ self.port.emit("loaded");
 
 
 function showView(name) {
-  const $view = views[name];
+  const view = views[name];
 
-  if($view) {
-    if($currentView) {
-      $currentView.addClass("hidden");
+  if(view) {
+    if(currentView) {
+      currentView.classList.add("hidden");
     }
 
-    $view.removeClass("hidden");
-    $currentView = $view; 
+    view.classList.remove("hidden");
+    currentView = view; 
   }
+}
+
+function onTaskNameClick(event) {
+  self.port.emit("clickedOnTask", this.textContent);
+  event.preventDefault();
 }

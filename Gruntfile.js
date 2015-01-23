@@ -51,7 +51,9 @@ module.exports = function(grunt) {
     sass: {                        
       build: {
         options: {                 
-          style: "expanded",
+          style: "compressed",
+          sourcemap: "none",
+          update: true
         },
         files: {        
           "extension/data/content.css": "extension/sass/content.scss",     

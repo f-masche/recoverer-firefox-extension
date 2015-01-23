@@ -65,10 +65,6 @@ const TaskRunner = Class({
       });
   },
 
-  cancel: function() {
-    this.canceled = true;
-  },
-
   _setStatus: function(status, message) {
     this.status = status;
     emit(this, "statusUpdate", status, message);
@@ -86,44 +82,35 @@ const TaskRunner = Class({
 
   _setNewPassword: function(message) {
 
-    if(this.canceled) {
-      this._setStatus("canceled");
-      return Promise.reject("canceled");
+    this._setStatus("settingNewPassword");
+
+    this.message = message;
+    this.password = passwordGenerator.generatePassword();
+
+    const url = this._getResetLinkFromMessage();
+
+    if(url) {
+      const scraper = Scraper(url, this.captchaSolver);
+      this.task.setNewPassword(scraper, this.password);
+
+      return scraper.run();
     } else {
-      this._setStatus("settingNewPassword");
-
-      this.message = message;
-      this.password = passwordGenerator.generatePassword();
-
-      const url = this._getResetLinkFromMessage();
-
-      if(url) {
-        const scraper = Scraper(url, this.captchaSolver);
-        this.task.setNewPassword(scraper, this.password);
-
-        return scraper.run();
-      } else {
-        return Promise.reject("No reset link found in message");
-      }
+      return Promise.reject("No reset link found in message");
     }
   },
 
   _login: function() {
-    if(this.canceled) {
-      this._setStatus("canceled");
-      return Promise.reject("canceled");
-    } else {
-      const scraper = Scraper(this.task.loginUrl, this.captchaSolver);
-      const self = this;
-      
-      this.task.login(scraper, this.email, this.password);
 
-      return scraper.run().then(function() {
-        self.loginTab.url = scraper.url;
-        self._setStatus("loggedIn");
-        return Promise.resolve();
-      });
-    }
+    const scraper = Scraper(this.task.loginUrl, this.captchaSolver);
+    const self = this;
+    
+    this.task.login(scraper, this.email, this.password);
+
+    return scraper.run().then(function() {
+      self.loginTab.url = scraper.url;
+      self._setStatus("loggedIn");
+      return Promise.resolve();
+    });
   },
 
   _setMessageAsRead: function() {
@@ -135,14 +122,9 @@ const TaskRunner = Class({
   },
 
   _getMessage: function() {
-    if(this.canceled) {
-      this._setStatus("canceled");
-      return Promise.reject("canceled");
-    } else {
-      this._setStatus("waitingForMessage");
-      const filters = extend(this.task.messageFilters, {in: "inbox", is: "unread"});
-      return this.messageSource.waitForMessage(filters);
-    }
+    this._setStatus("waitingForMessage");
+    const filters = extend(this.task.messageFilters, {in: "inbox", is: "unread"});
+    return this.messageSource.waitForMessage(filters);
   },
 
   _getResetLinkFromMessage: function() {

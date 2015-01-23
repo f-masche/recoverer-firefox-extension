@@ -15,13 +15,15 @@ Uses the GMail-API, so only GMail-Accounts are supported at the moment.
 
 ## Build
 
-This project uses grunt to build the plugin.
+This project uses Grunt to build the plugin.
 
 ### What you need
 
 - Node.js >= 0.8.0
+- Sass
+  `gem install sass`
 - Firefox > 31
-- install grunt-cli   
+- Grunt   
   `npm install grunt-cli -g`
 - install npm modules   
   `npm install`

@@ -34,13 +34,10 @@ const MainController = Class({
 
     this.worker = worker;
 
-    this.setTask(worker.tab.task);
-
-    this.worker.port.emit("setSupportedSites", tasks.getTasks().map((task) => task.name));
+    this.worker.port.emit("setSupportedSites", tasks.getTasks().map((t) => t.name));
 
     this.worker.port.on("submitedLoginForm", this.onSubmitLoginForm.bind(this));
 
-    this.worker.port.on("cancelButtonClicked", this.onCancelButtonClicked.bind(this));
 
     this.worker.port.on("clickedOnTask", function(taskName) {
       const task = tasks.getTaskForName(taskName);
@@ -54,13 +51,19 @@ const MainController = Class({
       console.log(TAG, "detach");
     });
 
+    //get task from url param
+    const taskName = worker.tab.url.match(/\?task=([a-zA-Z0-9]+)/);
+
+    if(taskName && taskName.length) {
+      const task = tasks.getTaskForName(taskName[1]);
+      this.setTask(task);
+    }
+
     console.log(TAG, "new controller");
   },
 
   setTask : function(task) {
-    if(!task) {
-      return;
-    }
+    console.log("Set task to " + task.name);
     this.task = task;
     this.worker.port.emit("setTask", task.name);
     this.worker.port.emit("showView", "login");
@@ -114,12 +117,6 @@ const MainController = Class({
 
     this.worker.port.emit("showView", "pending");
     this.worker.port.emit("setPendingMessage", "Requesting password reset");
-  },
-
-  onCancelButtonClicked: function() {
-    if(this.taskRunner) {
-      this.taskRunner.cancel();
-    }
   }
 });
 

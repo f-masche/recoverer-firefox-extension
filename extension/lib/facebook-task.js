@@ -4,9 +4,11 @@ const facebookTask = Task({
 
   loginUrl: "https://facebook.com",
 
-  loginUrlPattern: /^https:\/\/www.facebook.com\/\?*/,
+  loginUrlPattern: /^https:\/\/www\.facebook\.com\/\?*/,
 
-  resetLinkPattern: /https:\/\/www.facebook.com\/recover\/code\?[a-z0-9=&]*/g,
+  loginUrlSelector: "#login_form",
+
+  resetLinkPattern: /https:\/\/www\.facebook\.com\/recover\/code\?[a-z0-9=&]*/g,
 
   name: "facebook",
 
@@ -53,6 +55,10 @@ const facebookTask = Task({
 
   login: function(scraper, email, password) {   // jshint ignore:line
     //already logged in after password reset
+    scraper.fillIn("#login_form input[name=email]", email)
+      .fillIn("#login_form input[name=pass]", password)
+      .clickOn("#login_form input[type=submit]")
+      .waitForLoading();
   }
 });
 

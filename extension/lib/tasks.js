@@ -2,11 +2,9 @@
 const tasks = [
   require("github-task").task,
   require("amazon-task").task,
-  require("facebook-task").task
+  require("facebook-task").task,
+  require("twitter-task").task
 ];
-
-
-console.log(tasks);
 
 function getTasks() {
   //return a copy

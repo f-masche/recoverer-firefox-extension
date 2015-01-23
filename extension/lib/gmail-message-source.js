@@ -2,31 +2,9 @@ const { setTimeout } = require("sdk/timers");
 const { Class } = require("sdk/core/heritage");
 const { GmailClient } = require("gmail-client");
 
-const MAX_TRIES = 30;
+const MAX_TRIES = 15;
 
 const POLLING_INTERVAL = 2000;
-
-
-// function findCorrectMessage(messagesList, startDate) {
-//   let result = null;
-
-//   if(messagesList.messages) {
-
-//     for(let i = 0; i < messagesList.messages.length; i++) {
-//       const message = messagesList.messages[0];
-//       const dateHeader = message.original.payload.headers
-//         .find((h) => h.name === "Date");
-
-//       const messageDate = new Date(dateHeader.value);
-//       if(messageDate > startDate) {
-//         result = message;
-//         break;
-//       }
-//     }
-//   }
-
-//   return result;
-// }
 
 
 function pollMessages(GmailClient, filter) {

@@ -4,9 +4,9 @@ const githubTask = Task({
 
   loginUrl: "https://www.github.com/login",
 
-  loginUrlPattern: /^https:\/\/github.com\/login\/?$/,
+  loginUrlPattern: /^https:\/\/github\.com\/login\/?$/,
 
-  resetLinkPattern: /https:\/\/github.com\/password_reset\S+/,
+  resetLinkPattern: /https:\/\/github\.com\/password_reset\S+/,
 
   name: "Github",
 

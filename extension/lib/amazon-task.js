@@ -5,9 +5,9 @@ const amazonTask = Task({
   //start on main page cause of complicated sign in url
   loginUrl: "http://www.amazon.de/",
 
-  loginUrlPattern: /^https:\/\/www.amazon.de\/ap\/signin.*/,
+  loginUrlPattern: /^https:\/\/www\.amazon\.de\/ap\/signin.*/,
 
-  resetLinkPattern: /https:\/\/www.amazon.de\/ap\/forgotpassword\S+/,
+  resetLinkPattern: /https:\/\/www\.amazon\.de\/ap\/forgotpassword\S+/,
 
   name: "amazon",
 
