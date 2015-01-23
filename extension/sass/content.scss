@@ -19,11 +19,15 @@
   background: $brand-success;
   box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.35);
 
-  transform: translateY(-120%);
+  transform: translateY(0);
   transition: all 250ms ease-out;
 
-  &-show {
-    transform: translateY(0);
+  &-hidden {
+    transform: translateY(-120%);
+  }
+
+  &-error {
+    background: $brand-danger;
   }
 
   &-btn {
