@@ -21,10 +21,10 @@ function generatePassword() {
 }
 
 function bytesToAscii(bytes) {
-  let string = "";
+  var string = "";
 
-  for(let i = 0; i < bytes.length; i++) {
-    let charCode = bytes[i] % (ASCII_SIZE - ASCII_OFFSET) + ASCII_OFFSET;
+  for(var i = 0; i < bytes.length; i++) {
+    var charCode = bytes[i] % (ASCII_SIZE - ASCII_OFFSET) + ASCII_OFFSET;
     string += String.fromCharCode(charCode);
   }
 

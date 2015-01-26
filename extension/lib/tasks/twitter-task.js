@@ -1,4 +1,4 @@
-const { Task } = require("task");
+const { Task } = require("tasks/task");
 
 const twitterTask = Task({
 
@@ -34,11 +34,14 @@ const twitterTask = Task({
       .waitForLoading();
   },
 
-  login: function(scraper, email, password) {
-    scraper.fillIn("input[name='session[username_or_email]']", email)
-      .fillIn("input[name='session[password]']", password)
-      .clickOn("button[type=submit]")
-      .waitForLoading();
+  login: function(scraper, email, password) {   // jshint ignore:line
+
+    //already logged in
+
+    // scraper.fillIn("input[name='session[username_or_email]']", email)
+    //   .fillIn("input[name='session[password]']", password)
+    //   .clickOn("button[type=submit]")
+    //   .waitForLoading();
   }
 });
 

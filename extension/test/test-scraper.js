@@ -1,4 +1,4 @@
-var { Scraper } = require("scraper");
+var { Scraper } = require("util/scraper");
 var self = require("sdk/self");
 
 
@@ -52,6 +52,7 @@ exports["test scraper should fail getting text"] = function(assert, done) {
   scraper.run().catch(function(error) {
       assert.ok(error);
       done();
+      scraper._tab.close();
     });
 };
 
@@ -120,6 +121,7 @@ exports["test scraper should fail clicking"] = function(assert, done) {
     .catch(function(error) {
       assert.ok(error);
       done();
+      scraper._tab.close();
     });
 };
 
@@ -147,6 +149,7 @@ exports["test scraper should timeout waiting for element"] = function(assert, do
     .catch(function(error) {
       assert.ok(error);
       done();
+      scraper._tab.close();
     });
 };
 
@@ -178,6 +181,7 @@ exports["test scraper should fail filling in a value"] = function(assert, done) 
   scraper.run().catch(function(error) {
     assert.ok(error);
     done();
+    scraper._tab.close();
   });
 };
 

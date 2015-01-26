@@ -1,6 +1,6 @@
 const { setTimeout } = require("sdk/timers");
 const { Class } = require("sdk/core/heritage");
-const { GmailClient } = require("gmail-client");
+const { GmailClient } = require("email/gmail-client");
 
 const MAX_TRIES = 15;
 
@@ -8,7 +8,7 @@ const POLLING_INTERVAL = 2000;
 
 
 function pollMessages(GmailClient, filter) {
-  let times = 0;
+  var times = 0;
 
   const fetchMessages = function(resolve, reject) {
 
@@ -32,7 +32,7 @@ function pollMessages(GmailClient, filter) {
 }
 
 
-const GmailMessageSource = Class({
+const GmailEmailSource = Class({
   initialize: function(userId) {
     this.GmailClient = GmailClient(userId);
   },
@@ -53,4 +53,4 @@ const GmailMessageSource = Class({
 
 
 
-exports.GmailMessageSource = GmailMessageSource;
+exports.GmailEmailSource = GmailEmailSource;

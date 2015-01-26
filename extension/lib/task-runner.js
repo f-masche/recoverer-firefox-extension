@@ -3,9 +3,17 @@ const { EventTarget } = require("sdk/event/target");
 const { contract } = require("sdk/util/contract");
 const { emit } = require("sdk/event/core");
 
-const passwordGenerator = require("password-generator");
-const { Scraper } = require("scraper");
+const passwordGenerator = require("util/password-generator");
+const { Scraper } = require("util/scraper");
 
+
+const EVENTS = {
+  resettingPassword: "resettingPassword",
+  error: "error",
+  loggedIn: "loggedIn",
+  updatingEmail: "updatingEmail",
+  waitingForEmail: "waitingForEmail"
+};
 
 const taskRunnerContract = contract({
   task: {
@@ -17,7 +25,7 @@ const taskRunnerContract = contract({
   email: {
     is: ["string"]
   },
-  messageSource: {
+  emailSource: {
     is: ["object"]
   },
   captchaSolver: {
@@ -38,7 +46,7 @@ const TaskRunner = Class({
 
     this.loginTab = options.loginTab;
 
-    this.messageSource = options.messageSource;
+    this.emailSource = options.emailSource;
 
     this.captchaSolver = options.captchaSolver;
   },
@@ -49,7 +57,7 @@ const TaskRunner = Class({
 
     this._resetPassword()
       .then(function() {
-        return self._getMessage();
+        return self._getEmail();
       })
       .then(function(message) {
         return self._setNewPassword(message);
@@ -61,7 +69,7 @@ const TaskRunner = Class({
         return self._login();
       })
       .catch(function(error) {
-        self._setStatus("error", error);
+        self._setStatus(EVENTS.error, error);
       });
   },
 
@@ -74,7 +82,7 @@ const TaskRunner = Class({
 
     const scraper = Scraper(this.task.loginUrl, this.captchaSolver);
 
-    this._setStatus("resettingPassword");
+    this._setStatus(EVENTS.resettingPassword);
     this.task.resetPassword(scraper, this.email);
 
     return scraper.run();
@@ -108,7 +116,7 @@ const TaskRunner = Class({
 
     return scraper.run().then(function() {
       self.loginTab.url = scraper.url;
-      self._setStatus("loggedIn");
+      self._setStatus(EVENTS.loggedIn);
       return Promise.resolve();
     });
   },
@@ -116,15 +124,15 @@ const TaskRunner = Class({
   _setMessageAsRead: function() {
     //no canceling possible here
     //if password link was used the email should be marked as read
-    this._setStatus("updatingMessageStatus");
+    this._setStatus(EVENTS.updatingEmail);
 
-    return this.messageSource.setMessageAsRead(this.email, this.message);
+    return this.emailSource.setMessageAsRead(this.email, this.message);
   },
 
-  _getMessage: function() {
-    this._setStatus("waitingForMessage");
+  _getEmail: function() {
+    this._setStatus(EVENTS.waitingForEmail);
     const filters = extend(this.task.messageFilters, {in: "inbox", is: "unread"});
-    return this.messageSource.waitForMessage(filters);
+    return this.emailSource.waitForMessage(filters);
   },
 
   _getResetLinkFromMessage: function() {
@@ -140,4 +148,5 @@ const TaskRunner = Class({
 
 exports.TaskRunner = TaskRunner;
 
+exports.EVENTS = EVENTS;
 

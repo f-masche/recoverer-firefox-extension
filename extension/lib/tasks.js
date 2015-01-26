@@ -1,9 +1,9 @@
 //dependencies get resolved on packing, so dynamic loading is not possible
 const tasks = [
-  require("github-task").task,
-  require("amazon-task").task,
-  require("facebook-task").task,
-  require("twitter-task").task
+  require("tasks/github-task").task,
+  require("tasks/amazon-task").task,
+  require("tasks/facebook-task").task,
+  require("tasks/twitter-task").task
 ];
 
 function getTasks() {
@@ -12,7 +12,7 @@ function getTasks() {
 }
 
 function getTaskForName(name) {
-  let task = null;
+  var task = null;
 
   for(let i = 0; i < tasks.length; i++) {
     if(tasks[i].name === name) {

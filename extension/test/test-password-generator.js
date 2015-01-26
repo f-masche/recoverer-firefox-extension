@@ -1,4 +1,4 @@
-var passwordGenerator = require("password-generator");
+var passwordGenerator = require("util/password-generator");
 
 
 exports["test password generatePassword"] = function(assert) {

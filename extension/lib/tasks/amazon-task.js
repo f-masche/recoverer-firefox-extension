@@ -1,4 +1,4 @@
-const { Task } = require("task");
+const { Task } = require("tasks/task");
 
 const amazonTask = Task({
 

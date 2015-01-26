@@ -1,6 +1,6 @@
 const { Class } = require("sdk/core/heritage");
 const { TaskRunner } = require("task-runner");
-const { GmailMessageSource } = require("gmail-message-source");
+const { GmailEmailSource } = require("email/gmail-email-source");
 const tasks = require("tasks");
 
 const TAG = "main controller:";
@@ -76,7 +76,7 @@ const MainController = Class({
       task: this.task, 
       email: email,
       loginTab: this.worker.tab,
-      messageSource: GmailMessageSource(email),
+      emailSource: GmailEmailSource(email),
       captchaSolver: UserCaptchaSolver(this.worker)
     });
 

@@ -299,7 +299,7 @@ const WaitForElementAction = Class({
     const self = this;
     const time = 2000;
 
-    let timeoutId = -1;
+    var timeoutId = -1;
 
     this.scraper._worker.port.emit("waitForElement", this.selector, time);
 
@@ -478,7 +478,7 @@ const Scraper =  Class({
       console.log(TAG, "stack size = " + self._stack.length);
 
       if(self._stack.length) {
-        let action = self._stack.shift();
+        var action = self._stack.shift();
 
         console.log(TAG, "running " + action.name);
 
@@ -504,6 +504,20 @@ const Scraper =  Class({
       self._worker.port.emit("showErrorDialog", error);
       return Promise.reject(error);
     });
+  },
+
+  destory: function() {
+    if(this._tab) {
+      this._tab.close();
+      this._tab = null;
+    }
+
+    if(this._worker) {
+      this._worker.detach();
+      this._worker = null; 
+    }
+
+    this._stack = [];
   },
 
   _addAction: function(action) {

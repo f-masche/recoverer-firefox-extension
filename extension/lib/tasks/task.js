@@ -12,6 +12,10 @@ const taskContract = contract({
   resetLinkPattern: {
     is: ["regexp"]
   },
+  loginUrlSelector: {
+    map: (v) => v || null,
+    is: ["string", "null"]
+  },
   messageFilters: {
     is: ["object"]
   },
@@ -38,7 +42,6 @@ const Task = Class({
     taskContract(options);
 
     merge(this, options);
-    console.log(JSON.stringify(this));
     console.log("tasks: new task: " + this.name);
   },
 

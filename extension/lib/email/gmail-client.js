@@ -1,9 +1,12 @@
-const Http = require("http");
+const { Request } = require("sdk/request");
 const { Cr, Ci } = require("chrome");
 const { Class } = require("sdk/core/heritage");
 const windows = require("sdk/windows").browserWindows;
 const events = require("sdk/system/events");
 const base64 = require("sdk/base64");
+
+
+const TAG = "gmail-client:";
 
 /**
 * The url of the google OAuth2 login dialog.
@@ -39,7 +42,6 @@ const OAUTH_HOST = "https://www.googleapis.com/oauth2/v1";
 
 
 
-
 /**
 * Fetches the OAuth2 token.
 * Opens the google login dialog in a new window.
@@ -62,7 +64,7 @@ function getToken(userId) {
       const subject = event.subject.QueryInterface(Ci.nsIHttpChannel);
       const url = subject.URI.spec;
 
-      console.log("observed", url);
+      console.log(TAG, "Observed", url);
       if (redirectUrlPattern.test(url)) {
         subject.cancel(Cr.NS_BINDING_ABORTED);
         var token = getTokenFromUrl(url);
@@ -70,7 +72,7 @@ function getToken(userId) {
         if(token) {
           resolve(token);
         } else {
-          reject("No OAuth2 token found in redirect url");
+          reject(TAG, "No OAuth2 token found in redirect url");
         }
         oauthWindow.close();
         events.off("http-on-modify-request", redirectUrlListener);
@@ -115,20 +117,25 @@ function getTokenFromUrl(url) {
 */
 function validateToken(token) {
 
-  const request = Http.send({
-    url: OAUTH_HOST + "/tokeninfo?access_token=" + token,
-    format: "json"
+  const request = Request({
+    url: OAUTH_HOST + "/tokeninfo?access_token=" + token
   });
 
-  return request.then(function(response) {
-    if(response.audience === CLIENT_ID) {
-      console.log("validated token");
-      return token;
-    } else {
-      console.log("invalid token");
-      return Promise.reject("Invalid OAuth2 token");
-    }
+  request.get();
+
+  return new Promise(function(resolve, reject) {
+    request.on("complete", function({ json }) {
+      if(json.audience === CLIENT_ID) {
+        console.log(TAG, "Validated token");
+        resolve(token);
+      } else {
+        console.log(TAG, "Invalid OAuth2 token");
+        reject("Invalid OAuth2 token");
+      }
+    });
   });
+
+
 }
 
 
@@ -145,7 +152,7 @@ function openAuthWindow(userId) {
   "&scope=" + SCOPE +
   "&login_hint=" + userId;
 
-  console.log("gmail-api: opening new window at " + url);
+  console.log(TAG, "Opening new window at " + url);
   return windows.open({url: url});
 }
 
@@ -157,7 +164,7 @@ function openAuthWindow(userId) {
 *   Can be plain text or/and html.
 */
 function parseMessageBody(message) {
-  let text = "";
+  var text = "";
 
   console.log(JSON.stringify(message));
   function parsePart(part) {
@@ -166,7 +173,7 @@ function parseMessageBody(message) {
         const base64String = part.body.data.replace(/[-_]/g, "+");
         text += base64.decode(base64String, "utf-8");
       } catch (e) {
-        console.error("gmail-api: error decoding base64 string");
+        console.error(TAG, "Error decoding base64 string");
       }
     }
 
@@ -197,7 +204,7 @@ const GmailClient = Class({
   },
 
   listMessages: function(filters) {
-    let url = GMAIL_HOST + "/users/me/messages?q=";
+    var url = GMAIL_HOST + "/users/me/messages?q=";
 
     if(filters) {
       for(let name in filters) {
@@ -205,17 +212,11 @@ const GmailClient = Class({
       }  
     }
 
-    return this._send({ 
-      url: url ,
-      format: "json"
-    });
+    return this._send({ url: url });
   },
 
   getMessage: function(messageId) {
-    const request = this._send({
-        url: GMAIL_HOST + "/users/me/messages/" + messageId,
-        format: "json"
-      });
+    const request = this._send({ url: GMAIL_HOST + "/users/me/messages/" + messageId });
 
     return request.then(function(message) {
       return {
@@ -226,16 +227,22 @@ const GmailClient = Class({
   },
 
   modifyMessage: function(messageId, labelsToAdd, labelsToRemove) {
-    console.log("gmail-api: modify message " + messageId);
+    console.log(TAG, "Modify message " + messageId);
 
-    return this._send({
-      method: "post",
-      url: GMAIL_HOST + "/users/me/messages/" + messageId + "/modify",
-      data: {
+    const content = JSON.stringify({
         removeLabelIds: labelsToRemove || [],
         addLabelIds: labelsToAdd || [] 
-      }    
-    });
+      });
+
+
+    const options = {
+      url: GMAIL_HOST + "/users/me/messages/" + messageId + "/modify",
+      method: "post",
+      contentType: "application/json",
+      content: content
+    };
+
+    return this._send(options);
   },
 
   _send: function(options) {
@@ -248,16 +255,31 @@ const GmailClient = Class({
           options.headers = {};
         }
 
-        options.headers.Authorization = "Bearer " + self.oauthToken;
+        options.headers.Authorization = "Bearer " + self._oauthToken;
 
-        console.log("gmail-client: sending request " + JSON.stringify(options));
+        const request = Request(options);
 
-        return Http.send(options);
+        if(typeof request[options.method] === "function") {
+          request[options.method]();
+        } else {
+          request.get();
+        }
+        console.log(TAG, "Sending request " + JSON.stringify(options));
+
+        return new Promise(function(resolve, reject) {
+          request.once("complete", function(response) {
+            if(response.status === 200) {
+              resolve(response.json);
+            } else {
+              reject(response.text);
+            }
+          });
+        });      
       });
   },
 
   _authenticate: function() {
-    if(this.oauthToken) {
+    if(this._oauthToken) {
       return Promise.resolve(this.oauthToken);
     } else {
       const self = this;
@@ -265,7 +287,7 @@ const GmailClient = Class({
       return getToken(this.userId)
         .then(validateToken)
         .then(function(token) {
-          self.oauthToken = token;
+          self._oauthToken = token;
         });
     }
   }
