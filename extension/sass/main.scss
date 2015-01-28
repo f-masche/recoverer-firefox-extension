@@ -2,9 +2,13 @@
 * This is the stylesheet for the main plugin window
 */
 
-$body-bg: #F3F3F3;
+$brand-primary: #0084FF;
 
 @import "bootstrap-3.3.2/bootstrap";
+
+.ng-cloak {
+  display: none !important;
+}
 
 .center-panel {
   @extend .row;

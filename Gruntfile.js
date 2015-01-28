@@ -41,7 +41,7 @@ module.exports = function(grunt) {
         "Gruntfile.js", 
         "extension/data/*.js",
         "extension/lib/*.js",
-        "!extension/data/zepto.js"
+        "!extension/data/angular.min.js"
       ],
       options: {
         jshintrc: true

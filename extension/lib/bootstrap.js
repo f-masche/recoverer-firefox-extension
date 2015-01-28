@@ -1,8 +1,9 @@
+require("toolbar-button");
+
 const { PageMod } = require("sdk/page-mod");
 const self = require("sdk/self");
 const { MainController } = require("main-controller");
 const tasks = require("tasks");
-
 const pageMods = [];
 
 tasks.getTasks().forEach(function(task) {
@@ -42,14 +43,15 @@ function handleTaskAttach(worker, task) {
   }
 
   worker.port.on("clickedLoginButton", function() {
-    worker.tab.url = self.data.url("./index.html?task=" + task.name);
+    worker.tab.url = self.data.url("./index.html");
+    worker.tab.task = task;
   });
 }
 
 
 PageMod({
   include: self.data.url("./index.html") + "*",
-  contentScriptFile: "./main.js",
+  contentScriptFile: ["./angular.min.js", "./main.js"],
   onAttach: function(worker) {
     MainController(worker);
   }

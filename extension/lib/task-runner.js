@@ -55,6 +55,11 @@ const TaskRunner = Class({
 
     const self = this;
 
+    this._scraper = Scraper({
+      url: this.task.loginUrl, 
+      captchaSolver: this.captchaSolver
+    });
+
     this._resetPassword()
       .then(function() {
         return self._getEmail();
@@ -79,13 +84,13 @@ const TaskRunner = Class({
   },
 
   _resetPassword: function() {
-
-    const scraper = Scraper(this.task.loginUrl, this.captchaSolver);
-
     this._setStatus(EVENTS.resettingPassword);
-    this.task.resetPassword(scraper, this.email);
 
-    return scraper.run();
+    this._scraper.goTo(this.task.loginUrl);
+
+    this.task.resetPassword(this._scraper, this.email);
+
+    return this._scraper.run();
   },
 
   _setNewPassword: function(message) {
@@ -97,11 +102,12 @@ const TaskRunner = Class({
 
     const url = this._getResetLinkFromMessage();
 
-    if(url) {
-      const scraper = Scraper(url, this.captchaSolver);
-      this.task.setNewPassword(scraper, this.password);
+    if(url) {    
+      this._scraper.goTo(url);
 
-      return scraper.run();
+      this.task.setNewPassword(this._scraper, this.password);
+
+      return this._scraper.run();
     } else {
       return Promise.reject("No reset link found in message");
     }
@@ -109,14 +115,16 @@ const TaskRunner = Class({
 
   _login: function() {
 
-    const scraper = Scraper(this.task.loginUrl, this.captchaSolver);
     const self = this;
     
-    this.task.login(scraper, this.email, this.password);
+    this._scraper.goTo(this.task.loginUrl);
 
-    return scraper.run().then(function() {
-      self.loginTab.url = scraper.url;
+    this.task.login(this._scraper, this.email, this.password);
+
+    return this._scraper.run().then(function() {
+      self.loginTab.url = self._scraper.url;
       self._setStatus(EVENTS.loggedIn);
+      self._tab.close();
       return Promise.resolve();
     });
   },

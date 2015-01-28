@@ -7,48 +7,100 @@
     <link rel="stylesheet" type="text/css" href="bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="style.css"/>
   </head>
-  <body>
-    <div class="content">
+  <body class="content" data-ng-app="Recoverer" data-ng-controller="AppController">
+    <div class="center-panel ng-cloak">
 
-      <div class="center-panel">
+      <div data-ng-switch="view">
 
-        <div id="home-view">
-          <h3>Welcome to Recoverer</h3>
-          <p>Please choose a site to sign in to.</p>
 
-          <ul id="supported-sites">
-            <!-- supported websites -->
-          </ul>
-        </div>
+        <section data-ng-switch-when="home" class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Welcome to Recoverer</h3>
+          </div>
+          <div class="panel-body">
+            <p>Please choose a site to sign in to.</p>
 
-        <div id="login-view" class="hidden">
-          <h3>Sign in to <span id="task-name"></span></h3>
-          <p class="text-info">Only Gmail accounts supported at the moment</p>
-          <div id="error-message" class="alert alert-danger hidden"></div>
-          <form id="gmail-login-form">
-            <div class="form-group">
-              <label for="gmail-email">Gmail address:</label>
-              <input class="form-control" type="email" id="gmail-email" name="gmail-email" required/>
+            <div class="list-group">
+              <a href="#" data-ng-repeat="task in tasks" class="list-group-item" data-ng-click="clickedTask(task)">
+                <img src="{{ task.loginUrl | favicon }}"/>
+                {{ task.name }}
+              </a>
             </div>
-            <button id="login-to-home-btn" class="btn btn-default" type="button">Go back</button>
-            <button class="btn btn-primary" type="submit">Sign in</button>
-          </form>
-        </div>
+          </div>
+        </section>
 
-        <div id="pending-view" class="hidden">
-          <div id="pending-spinner" class="spinner center-block"></div>
-          <form id="captcha-form" class="hidden">
-            <h3> Please solve this captcha to continue </h3>
-            <div class="form-group" id="captcha-box">
-              <!-- captcha image -->
+
+        <section data-ng-switch-when="signIn" class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Sign in to {{ task.name }}</h3>
+          </div>
+
+          <div class="panel-body">
+            <p class="text-info">Only Gmail accounts supported at the moment</p>
+            <div id="error-message" class="alert alert-danger hidden"></div>
+            <form id="gmail-login-form" data-ng-submit="login(email)">
+              <div class="form-group">
+                <label>Gmail address:</label>
+                <input class="form-control" type="email" name="email" data-ng-model="email" required/>
+              </div>
+              <button class="btn btn-default" type="button" data-ng-click="toHomeView()">Back</button>
+              <button class="btn btn-primary">Sign in</button>
+            </form>
+          </div>
+        </section>
+
+
+        <section data-ng-switch-when="pending" class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Signing in to {{ task.name }}...</h3>
+          </div>
+
+          <div class="panel-body">
+            <div ng-hide="status=='error'" class="spinner center-block"></div>
+
+            <div data-ng-switch="status">
+
+              <p data-ng-switch-when="resettingPassword">Resetting your password</p>
+
+              <p data-ng-switch-when="updatingEmail">Updating the email status</p>
+
+              <p data-ng-switch-when="waitingForEmail">Waiting for email</p>
+
+              <p data-ng-switch-when="loggedIn">Logged in</p>
+
+              <div data-ng-switch-when="error" >
+                <div class="alert alert-danger">
+                  <h4>Something went wrong</h4>
+                  <p>{{ errorMessage }}</p>
+                </div>
+                <button data-ng-click="toSignInView()" class="btn btn-default">
+                  Back
+                </button>
+              </div>
             </div>
-            <div class="form-group">
-              <input class="form-control" type="text" name="captcha"/>
-            </div>
-            <button class="btn btn-lg btn-primary btn-block" type="submit">Ok</button>
-          </form>
-          <p id="pending-message" class="text-center"></p>
-        </div>
+          </div>
+        </section>
+
+        <section data-ng-switch-when="captcha" class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Please solve this captcha</h3>
+          </div>
+
+          <div class="panel-body">
+            <form data-ng-submit="solvedCaptcha(solution)">
+              <h3> Please solve this captcha to continue </h3>
+              <div class="form-group">
+                <img data-ng-src="{{ captchaSrc }}" src="" alt="captcha" class="center-block"/>
+              </div>
+              <div class="form-group">
+                <input class="form-control" type="text" data-ng-model="solution"/>
+              </div>
+              <button class="btn btn-lg btn-primary btn-block">Continue</button>
+            </form>
+            <p id="pending-message" class="text-center"></p>
+          </div>
+        </section>
+
       </div>
     </div>
   </body>

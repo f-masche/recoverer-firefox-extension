@@ -1,118 +1,74 @@
-/* globals self, document  */
-const views = {
-  home: document.getElementById("home-view"),
-  login: document.getElementById("login-view"),
-  pending: document.getElementById("pending-view")
-};
+/* globals angular, self*/
 
-const gmailEmail = document.getElementById("gmail-email");
-const taskName = document.getElementById("task-name");
-const captchaForm = document.getElementById("captcha-form");
-const pendingMessage = document.getElementById("pending-message");
-const errorMessage = document.getElementById("error-message");
-const captchaBox = document.getElementById("captcha-box");
-const supportedSitesList = document.getElementById("supported-sites");
+const recoverer = angular.module("Recoverer", []);
 
-let currentView = null;
+recoverer.controller("AppController", function($scope, port) {
 
-//add event handlers
-
-captchaForm.addEventListener("submit", function(event) {
-  const input = this.querySelector("input[name=captcha]");
-  self.port.emit("solvedCaptcha", input.value);
-  input.value = "";
-  this.classList.add("hidden");
-  
-  pendingMessage.classList.remove("hidden");
-  document.getElementById("pending-spinner").classList.remove("hidden");
-
-  event.preventDefault();
-});
-
-document.getElementById("gmail-login-form")
-  .addEventListener("submit", function(event) {
-    self.port.emit("submitedLoginForm", gmailEmail.value);
-    gmailEmail.value = "";
-    event.preventDefault();
+  port.on("setTasks", function(tasks) {
+    $scope.tasks = tasks;
   });
 
-document.getElementById("login-to-home-btn")
-  .addEventListener("click", function(event) {
-    showView("home");
-    event.preventDefault();
+  port.on("setTask", function(task) {
+    $scope.task = $scope.tasks.find((t) => t.name === task.name);
+    $scope.view = "signIn";
   });
 
+  port.on("setStatus", function(status, statusMessage) {
+    $scope.status = status;
 
-//attach port listeners
-
-self.port.on("setSupportedSites", function(siteNames) {
-  //clear list 
-  supportedSitesList.innerHTML = "";
-
-  //fill list
-  siteNames.forEach(function(name) {
-
-    const a = document.createElement("a");
-    a.href = "#";
-    a.textContent = name;
-    a.addEventListener("click", onTaskNameClick);
-
-    const li = document.createElement("li");
-    li.appendChild(a);
-
-    supportedSitesList.appendChild(li);
-  });
-});
-
-self.port.on("solveCaptcha", function(imageSrc) {
-  captchaForm.classList.remove("hidden");
-  pendingMessage.classList.add("hidden");
-  document.getElementById("pending-spinner").classList.remove("hidden");
-
-  const captchaImg = document.createElement("img");
-  captchaImg.classList.add("img-thumbnail");
-  captchaImg.src = imageSrc;
-
-  captchaBox.innerHTML = "";
-  captchaBox.appendChild(captchaImg);
-});
-
-self.port.on("showView", function(name) {
-  showView(name);
-});
-
-self.port.on("setTask", function(name) {
-  taskName.textContent = name;
-  errorMessage.classList.add("hidden");
-});
-
-self.port.on("setPendingMessage", function(message) {
-  pendingMessage.textContent = message;
-});
-
-self.port.on("showErrorMessage", function(message) {
-  errorMessage.textContent = message;
-  errorMessage.classList.remove("hidden");
-});
-
-showView("home");
-self.port.emit("loaded");
-
-
-function showView(name) {
-  const view = views[name];
-
-  if(view) {
-    if(currentView) {
-      currentView.classList.add("hidden");
+    if(status === "error") {
+      $scope.errorMessage = statusMessage;
     }
+  });
 
-    view.classList.remove("hidden");
-    currentView = view; 
-  }
-}
+  port.on("solveCaptcha", function(captchaSrc) {
+    $scope.view = "captcha";
+    $scope.captchaSrc = captchaSrc;
+  });
 
-function onTaskNameClick(event) {
-  self.port.emit("clickedOnTask", this.textContent);
-  event.preventDefault();
-}
+  $scope.toSignInView = function() {
+    $scope.view = "signIn";
+  };
+
+  $scope.toHomeView = function() {
+    $scope.view = "home";
+  };
+
+  $scope.login = function(email) {
+    port.emit("runTask", $scope.task.name, email);
+    $scope.status = null;
+    $scope.view = "pending";
+  };
+
+  $scope.solvedCaptcha = function(solution) {
+    port.emit("solvedCaptcha", solution);
+    $scope.view = "pending";
+  };
+
+  $scope.clickedTask = function(task) {
+    $scope.task = task;
+    $scope.view = "signIn";
+  };
+
+  $scope.view = "home";
+});
+
+
+recoverer.service("port", function($rootScope) {
+  this.on = function(key, callback) {
+    self.port.on(key, function() {
+      callback.apply(null, arguments);
+      $rootScope.$apply();
+    });
+  };
+
+  this.emit = self.port.emit.bind(self);
+});
+
+recoverer.filter("favicon", function($window) {
+  const link = $window.document.createElement("a");
+  return function(href) {
+    link.href = href;
+    return link.protocol + link.host + "/favicon.ico";
+  };
+});

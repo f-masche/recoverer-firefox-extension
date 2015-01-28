@@ -1,9 +1,9 @@
-//const { Page } = require("sdk/page-worker"); 
 const { setTimeout, clearTimeout } = require("sdk/timers");
 const { Class } = require("sdk/core/heritage");
+const { contract } = require("sdk/util/contract");
 const tabs = require("sdk/tabs");
-var { attach } = require("sdk/content/mod");
-var { Style } = require("sdk/stylesheet/style");
+const { attach } = require("sdk/content/mod");
+const { Style } = require("sdk/stylesheet/style");
 
 const TAG = "scraper:";
 
@@ -20,6 +20,61 @@ const Action = Class({
   }
 });
 
+const InitAction = Class({
+
+  extends: Action,
+
+  initialize: function(scraper) {
+    Action.prototype.initialize.call(this, scraper, "init");
+  },
+
+  handler: function(resolve) {
+    const self = this;
+
+    tabs.open({
+      url: this.scraper.url,
+      onOpen: function(tab) {
+        self.initTab(tab, resolve);
+      }
+    });
+  },
+
+  initTab: function(tab, resolve) {
+    const self = this;
+
+    this.scraper._tab = tab;
+
+    tab.on("ready", function(tab) {
+      console.log(TAG, "on " + tab.url);
+      self.scraper.url = tab.url;
+      self.scraper._worker = tab.attach({
+        contentScriptFile: ["./scraper.js"]
+      });
+    });
+
+    tab.once("ready", function() {
+      //bugfix @see WaitForLoadingAction#handler
+      setTimeout(resolve, 1);
+    });
+  }
+});
+
+
+const GoToAction = Class({
+
+  extends: Action,
+
+  initialize: function(scraper, url) {
+    Action.prototype.initialize.call(this, scraper, "goTo");
+    this.url = url;
+  },
+
+  handler: function(resolve) {
+    console.log(TAG, "Going to " + this.url);
+    this.scraper._tab.url = this.url;
+    resolve();
+  }
+});
 
 const WaitForLoadingAction = Class({
 
@@ -352,61 +407,37 @@ const ThenAction = Class({
 
 
 
+const scraperContract = contract({
+  url: {
+    is: ["string"]
+  },
+  captchaSolver: {
+    is: ["object"]
+  }
+});
+
 const Scraper =  Class({
 
-  initialize: function(url, captchaSolver) {
-    const self = this;
+  initialize: function(options) {
 
-    this.url = "";
+    scraperContract(options);
+
+    this.url = options.url;
     this.results = [];
 
-    this._captchaSolver = captchaSolver;
+    this._captchaSolver = options.captchaSolver;
     this._stack = [];
     this._stackInsertIndex = 0;
 
-    const initAction = Action(this, "init");
+    this._addAction(InitAction(this));
 
-    initAction.handler = function(resolve) {
-      tabs.open({
-        url: url,
-        onOpen: function(tab) {
-          self._tab = tab;
+    console.log(TAG, "new scraper on: " + this.url);
+  },
 
-          tab.on("ready", function(tab) {
-            console.log(TAG, "Opened tab");
-            self.url = tab.url;
-            self._worker = tab.attach({
-              contentScriptFile: ["./scraper.js"]
-            });
-          });
-
-          tab.once("ready", function() {
-            //bugfix @see WaitForLoadingAction#handler
-            setTimeout(resolve, 1);
-          });
-        }
-      });
-    };
-
-    this._addAction(initAction);
-
-/*
-    this._worker = Page({
-        contentScriptFile: "./scraper.js",
-        contentURL: url,
-        contentScriptWhen: "ready"
-      });
-
-    this._worker.port.on("loaded", function(url) {
-      self.url = url;
-      console.log("loaded", url);
-    });
-
-    //wait for initial loading
-    this.waitForLoading();
-*/
-
-    console.log(TAG, "new scraper on: " + url);
+  goTo: function(url) {
+    this._addAction(GoToAction(this, url));
+    this._addAction(WaitForLoadingAction(this));
+    return this;
   },
 
   expect: function(selector) {
@@ -490,13 +521,13 @@ const Scraper =  Class({
       } else {
         console.log(TAG, "finished");
         self._running = false;
-        self._tab.close();
         return self.results;
       }
     }
 
     return runAction().catch(function(error) {
       self._running = false;
+      self._tab.activate();
 
       const style = Style({ uri: "./content.css" });
       attach(style, self._tab);
@@ -506,7 +537,7 @@ const Scraper =  Class({
     });
   },
 
-  destory: function() {
+  destroy: function() {
     if(this._tab) {
       this._tab.close();
       this._tab = null;

@@ -12,16 +12,7 @@ function getTasks() {
 }
 
 function getTaskForName(name) {
-  var task = null;
-
-  for(let i = 0; i < tasks.length; i++) {
-    if(tasks[i].name === name) {
-      task = tasks[i];
-      break;
-    }
-  }
-
-  return task;
+  return tasks.find((t) => t.name === name);
 }
 
 
