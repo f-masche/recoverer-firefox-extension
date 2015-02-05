@@ -1,3 +1,7 @@
+/*
+* This module creates a simple toolbar button that opens the extension in a new tab
+*/
+
 const { ActionButton } = require("sdk/ui/button/action");
 const tabs = require("sdk/tabs");
 const self = require("sdk/self");
