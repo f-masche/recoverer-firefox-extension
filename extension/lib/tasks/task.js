@@ -16,7 +16,7 @@ const taskContract = contract({
     map: (v) => v || null,
     is: ["string", "null"]
   },
-  messageFilters: {
+  emailFilters: {
     is: ["object"]
   },
   name: {
@@ -42,20 +42,20 @@ const Task = Class({
     taskContract(options);
 
     merge(this, options);
-    console.log("tasks: new task: " + this.name);
+    console.log("Tasks: new task: " + this.name);
   },
 
 
 /* jshint ignore:start */
 
   resetPassword: function(scraper, email) {
-    throw new Error("this method must be implemented");
+    throw new Error("This method must be implemented");
   },
   setNewPassword: function(scraper, password) { 
-    throw new Error("this method must be implemented");
+    throw new Error("This method must be implemented");
   },
   login: function(scraper, email, password) {
-    throw new Error("this method must be implemented");
+    throw new Error("This method must be implemented");
   }
 
 /* jshint ignore:end */

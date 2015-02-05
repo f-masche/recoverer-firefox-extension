@@ -12,7 +12,7 @@ const twitterTask = Task({
 
   name: "twitter",
 
-  messageFilters: {
+  emailFilters: {
     from: "password@twitter.com", 
     subject: "passwort zurücksetzen"
   },

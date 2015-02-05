@@ -11,7 +11,7 @@ const amazonTask = Task({
 
   name: "amazon",
 
-  messageFilters: {
+  emailFilters: {
     from: "konto-aktualisierung@amazon.de", 
     subject: "passworthilfe"
   },

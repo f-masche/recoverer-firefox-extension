@@ -10,7 +10,7 @@ const githubTask = Task({
 
   name: "Github",
 
-  messageFilters: {
+  emailFilters: {
     from: "noreply@github.com", 
     subject: "github reset password"
   },

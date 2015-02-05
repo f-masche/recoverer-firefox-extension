@@ -130,17 +130,15 @@ const TaskRunner = Class({
   },
 
   _setMessageAsRead: function() {
-    //no canceling possible here
     //if password link was used the email should be marked as read
     this._setStatus(EVENTS.updatingEmail);
-
-    return this.emailSource.setMessageAsRead(this.email, this.message);
+    return this.emailSource.setEmailAsRead(this.message.original.id);
   },
 
   _getEmail: function() {
     this._setStatus(EVENTS.waitingForEmail);
-    const filters = extend(this.task.messageFilters, {in: "inbox", is: "unread"});
-    return this.emailSource.waitForMessage(filters);
+    const filters = extend(this.task.emailFilters, {in: "inbox", is: "unread"});
+    return this.emailSource.waitForEmail(filters);
   },
 
   _getResetLinkFromMessage: function() {

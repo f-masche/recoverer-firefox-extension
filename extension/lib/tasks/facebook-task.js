@@ -12,7 +12,7 @@ const facebookTask = Task({
 
   name: "facebook",
 
-  messageFilters: {
+  emailFilters: {
     from: "@facebookmail.com",
     subject: "neues passwort angefragt"
   },
