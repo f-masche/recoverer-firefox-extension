@@ -61,7 +61,7 @@ exports["test task runner should call all methods of the tasks"] = function(asse
       assert.ok(calledLogin, "Called login");
       assert.ok(calledResetPassword, "Called resetPassword");
       assert.ok(calledSetNewPassword, "Called setNewPassword");
-
+      taskRunner._scraper._tab.close();//only needed in test
       done();     
     }
 

@@ -22,27 +22,6 @@ exports["test scraper should run"] = function(assert, done) {
   });
 };
 
-exports["test scraper should run with a given tab"] = function(assert, done) {
-
-  tabs.open({
-    url: "about:blank",
-    onOpen: function(tab) {
-      
-      const scraper = Scraper({
-        url: self.data.url("./test-1.html"),
-        captchaSolver: captchaSolver,
-        tab: tab
-      });
-
-      scraper.run().then(function() {
-        assert.pass();
-        tab.close();
-        done();
-      });
-    }
-  });
-};
-
 
 exports["test scraper should find text"] = function(assert, done) {
 
@@ -88,8 +67,8 @@ exports["test scraper should fail getting text"] = function(assert, done) {
 
   scraper.run().catch(function(error) {
       assert.ok(error);
-      done();
       scraper._tab.close();
+      done();
     });
 };
 
@@ -105,8 +84,8 @@ exports["test scraper should get attribute"] = function(assert, done) {
   });
   
   scraper.run().then(function() {
-    done();
     scraper._tab.close();
+    done();
   });
 };
 
@@ -180,8 +159,8 @@ exports["test scraper should fail clicking"] = function(assert, done) {
   scraper.run()
     .catch(function(error) {
       assert.ok(error);
-      done();
       scraper._tab.close();
+      done();
     });
 };
 
@@ -327,7 +306,7 @@ exports["test scraper should check for an element and catch the error"] = functi
   scraper.expect("#nothing").catch(function(){
 
     scraper.getText("#page").then(function(text) {
-      assert.equal("2", text);
+      assert.equal("1", text);
       called = true;
     });
   });
@@ -338,6 +317,5 @@ exports["test scraper should check for an element and catch the error"] = functi
     done();
   });
 };
-
 
 require("sdk/test").run(exports);
