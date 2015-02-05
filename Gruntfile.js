@@ -1,8 +1,11 @@
 /* globals module */
 
+
+
 module.exports = function(grunt) {
 
   var config = grunt.file.readJSON("config.json");
+  var file = grunt.option("file");
 
   // Project configuration.
   grunt.initConfig({
@@ -77,8 +80,8 @@ module.exports = function(grunt) {
           "mozilla-addon-sdk": "latest",
           extension_dir: "extension", // jshint ignore:line
           command: "test",
-          arguments: 
-            (config.firefox.bin ? "-b " + config.firefox.bin : "") +
+          arguments: (file ? "-f " + file : "") +
+            (config.firefox.bin ? " -b " + config.firefox.bin : "") +
             (config.firefox.profile ? " --profiledir " + config.firefox.profile  : ""),
           pipe_output: true // jshint ignore:line
         }
@@ -90,7 +93,7 @@ module.exports = function(grunt) {
           extension_dir: "extension", // jshint ignore:line
           command: "run",
           arguments: 
-            (config.firefox.bin ? "-b " + config.firefox.bin : "") +
+            (config.firefox.bin ? "-b " + config.firefox.bin + " " : "") +
             (config.firefox.profile ? " --profiledir " + config.firefox.profile  : ""),          pipe_output: true // jshint ignore:line
         }
       }
@@ -118,5 +121,4 @@ module.exports = function(grunt) {
   grunt.registerTask("default", ["jshint:all", "validation", "sass", "mozilla-addon-sdk", "mozilla-cfx:run"]);
   grunt.registerTask("test", [ "jshint:all", "validation", "sass", "mozilla-addon-sdk", "mozilla-cfx:test"]);
   grunt.registerTask("build", ["test", "mozilla-cfx-xpi:stable"]);
-
 };
