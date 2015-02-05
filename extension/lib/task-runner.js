@@ -22,7 +22,7 @@ const taskRunnerContract = contract({
   loginTab: {
     is: ["object"]
   },
-  email: {
+  userEmail: {
     is: ["string"]
   },
   emailSource: {
@@ -42,7 +42,7 @@ const TaskRunner = Class({
 
     this.task = options.task;
 
-    this.email = options.email;
+    this.userEmail = options.userEmail;
 
     this.loginTab = options.loginTab;
 
@@ -64,11 +64,11 @@ const TaskRunner = Class({
       .then(function() {
         return self._getEmail();
       })
-      .then(function(message) {
-        return self._setNewPassword(message);
+      .then(function(email) {
+        return self._setNewPassword(email);
       })
       .then(function() {
-        return self._setMessageAsRead();
+        return self._setEmailAsRead();
       })
       .then(function() {
         return self._login();
@@ -88,19 +88,19 @@ const TaskRunner = Class({
 
     this._scraper.goTo(this.task.loginUrl);
 
-    this.task.resetPassword(this._scraper, this.email);
+    this.task.resetPassword(this._scraper, this.userEmail);
 
     return this._scraper.run();
   },
 
-  _setNewPassword: function(message) {
+  _setNewPassword: function(email) {
 
     this._setStatus("settingNewPassword");
 
-    this.message = message;
+    this.email = email;
     this.password = passwordGenerator.generatePassword();
-
-    const url = this._getResetLinkFromMessage();
+    console.log(this.password);
+    const url = this._getResetLinkFromEmail();
 
     if(url) {    
       this._scraper.goTo(url);
@@ -109,7 +109,7 @@ const TaskRunner = Class({
 
       return this._scraper.run();
     } else {
-      return Promise.reject("No reset link found in message");
+      return Promise.reject("No reset link found in email");
     }
   },
 
@@ -119,20 +119,21 @@ const TaskRunner = Class({
     
     this._scraper.goTo(this.task.loginUrl);
 
-    this.task.login(this._scraper, this.email, this.password);
+    this.task.login(this._scraper, this.userEmail, this.password);
+
+    this.password = null;
 
     return this._scraper.run().then(function() {
       self.loginTab.url = self._scraper.url;
       self._setStatus(EVENTS.loggedIn);
-      self._tab.close();
       return Promise.resolve();
     });
   },
 
-  _setMessageAsRead: function() {
+  _setEmailAsRead: function() {
     //if password link was used the email should be marked as read
     this._setStatus(EVENTS.updatingEmail);
-    return this.emailSource.setEmailAsRead(this.message.original.id);
+    return this.emailSource.setEmailAsRead(this.email.original.id);
   },
 
   _getEmail: function() {
@@ -141,8 +142,8 @@ const TaskRunner = Class({
     return this.emailSource.waitForEmail(filters);
   },
 
-  _getResetLinkFromMessage: function() {
-    const matches = this.message.text.match(this.task.resetLinkPattern);
+  _getResetLinkFromEmail: function() {
+    const matches = this.email.text.match(this.task.resetLinkPattern);
 
     if(matches) {
       return matches[0];

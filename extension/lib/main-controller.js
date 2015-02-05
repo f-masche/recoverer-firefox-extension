@@ -29,19 +29,20 @@ const MainController = Class({
     worker.on("detach", function () {
       console.log(TAG, "detach");
       // cleanup
+      self.taskRunner = null;
     });
 
     console.log(TAG, "new controller");
   },
 
-  runTask: function(task, email) {
+  runTask: function(task, userEmail) {
     const self = this;
 
     this.taskRunner = TaskRunner({
       task: task, 
-      email: email,
+      userEmail: userEmail,
       loginTab: this.worker.tab,
-      emailSource: GmailEmailSource(email),
+      emailSource: GmailEmailSource(userEmail),
       captchaSolver: UserCaptchaSolver(this.worker)
     });
 
@@ -57,7 +58,7 @@ const MainController = Class({
 
     self.taskRunner.on("statusUpdate", statusUpdateHandler);
 
-    this.taskRunner.run(email, this.worker.tab);
+    this.taskRunner.run();
 
     this.worker.port.emit("setView", "pending");
     this.worker.port.emit("setPendingMessage", "Requesting password reset");

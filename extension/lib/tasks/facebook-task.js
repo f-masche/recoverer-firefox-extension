@@ -62,4 +62,6 @@ const facebookTask = Task({
   }
 });
 
+Object.freeze(facebookTask);
+
 exports.task = facebookTask;

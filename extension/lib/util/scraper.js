@@ -810,7 +810,9 @@ const Scraper =  Class({
     return runAction().catch(function(error) {
       self._running = false;
       self._tab.activate();
-
+      self._stack = [];
+      self._stackInsertIndex = 0;
+      
       const style = Style({ uri: "./content.css" });
       attach(style, self._tab);
 
