@@ -1,19 +1,26 @@
-/* globals angular, self*/
+/*
+* This is the main content script for the recoverer application.
+*/
 
-const recoverer = angular.module("Recoverer", []);
 
+const recoverer = angular.module("Recoverer", []); //jshint ignore:line
+
+
+/**
+* Main controller for the application.
+*/
 recoverer.controller("AppController", function($scope, port) {
 
-  port.on("setTasks", function(tasks) {
+  port.on(port.events.getTasks, function(tasks) {
     $scope.tasks = tasks;
   });
 
-  port.on("setTask", function(task) {
+  port.on(port.events.getTask, function(task) {
     $scope.task = $scope.tasks.find((t) => t.name === task.name);
     $scope.view = "signIn";
   });
 
-  port.on("setStatus", function(status, statusMessage) {
+  port.on(port.events.setStatus, function(status, statusMessage) {
     $scope.status = status;
 
     if(status === "error") {
@@ -21,7 +28,7 @@ recoverer.controller("AppController", function($scope, port) {
     }
   });
 
-  port.on("solveCaptcha", function(captchaSrc) {
+  port.on(port.events.solveCaptcha, function(captchaSrc) {
     $scope.view = "captcha";
     $scope.captchaSrc = captchaSrc;
   });
@@ -41,7 +48,7 @@ recoverer.controller("AppController", function($scope, port) {
   };
 
   $scope.solvedCaptcha = function(solution) {
-    port.emit("solvedCaptcha", solution);
+    port.emit(port.events.solvedCaptcha, solution);
     $scope.view = "pending";
   };
 
@@ -54,7 +61,18 @@ recoverer.controller("AppController", function($scope, port) {
 });
 
 
+/**
+* Angular module wrapper for the Addon-SDKs `self.port` object.
+*/
 recoverer.service("port", function($rootScope) {
+  this.events = {
+    setTasks: "setTasks",
+    setTask: "setTask",
+    setStatus: "setStatus",
+    solveCaptcha: "solveCaptcha",
+    solvedCaptcha: "solvedCaptcha"
+  };
+
   this.on = function(key, callback) {
     self.port.on(key, function() {
       callback.apply(null, arguments);
@@ -65,6 +83,10 @@ recoverer.service("port", function($rootScope) {
   this.emit = self.port.emit.bind(self);
 });
 
+
+/**
+* This filter translates any url to the corresponding favicon src.
+*/
 recoverer.filter("favicon", function($window) {
   const link = $window.document.createElement("a");
   return function(href) {

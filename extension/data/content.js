@@ -1,13 +1,32 @@
-/* globals document, self, setTimeout */
+/*
+* This content script displays a popover on a login page,
+* to let the user sign in with recoverer.
+*/
 
+const EVENTS = {
+  showPopup: "showPopup",
+  elementExists: "elementExists",
+  clickedLoginButton: "clickedLoginButton"
+};
 
-self.port.on("showPopup", showPopup);
+/**
+* Shows the popup
+*/
+self.port.on(EVENTS.showPopup, showPopup);
 
-self.port.on("elementExists", function(selector) {
+/**
+* Checks if an element exists on the current page.
+* @param {String} selector The CSS selector for the element.
+*/
+self.port.on(EVENTS.elementExists, function(selector) {
   const elementExists = document.querySelector(selector) !== null;
-  self.port.emit("elementExists", elementExists);
+  self.port.emit(EVENTS.elementExists, elementExists);
 });
 
+
+/**
+* Creates and displays the popup.
+*/
 function showPopup() {
   const popup = document.createElement("div");
   popup.className = "recoverer-popup recoverer-popup-hidden";
@@ -21,7 +40,7 @@ function showPopup() {
   loginButton.textContent = "Yes";
 
   loginButton.addEventListener("click", function() {
-    self.port.emit("clickedLoginButton");
+    self.port.emit(EVENTS.clickedLoginButton);
   });
 
   const closeButton = document.createElement("button");
@@ -31,7 +50,7 @@ function showPopup() {
   closeButton.addEventListener("click", function() {
     popup.classList.add("recoverer-popup-hidden");
 
-    setTimeout(function() {
+    window.setTimeout(function() {
       document.body.removeChild(popup);
     }, 1000);
   });
@@ -42,7 +61,7 @@ function showPopup() {
 
   document.body.appendChild(popup);
 
-  setTimeout(function() {
+  window.setTimeout(function() {
     popup.classList.remove("recoverer-popup-hidden");
   }, 500);
 }

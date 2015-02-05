@@ -1,32 +1,11 @@
 const { Class } = require("sdk/core/heritage");
 const { TaskRunner } = require("task-runner");
 const { GmailEmailSource } = require("email/gmail-email-source");
+const { UserCaptchaSolver } = require("util/user-captcha-solver");
 const tasks = require("tasks");
 
 const TAG = "main controller:";
 
-const UserCaptchaSolver = Class({
-  initialize: function(worker) {
-    this._worker = worker;
-  },
-  solveCaptcha: function(imageSrc) {
-    const self = this;
-
-    this._worker.tab.activate();
-
-    this._worker.port.emit("solveCaptcha", imageSrc);
-    
-    return new Promise(function(resolve, reject) {
-      self._worker.port.once("solvedCaptcha", function(solution, error) {
-        if(error) {
-          reject(error);
-        } else {
-          resolve(solution);
-        }
-      });
-    });
-  }
-});
 
 
 const MainController = Class({

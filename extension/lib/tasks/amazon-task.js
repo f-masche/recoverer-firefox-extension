@@ -20,6 +20,13 @@ const amazonTask = Task({
 
     scraper.clickOn("#nav-flyout-ya-signin a")
       .waitForLoading()
+      .expect("#ap_small_forgot_password_span a")
+      .catch(function() {
+        //no password reset link, so there is a bot check
+        scraper.solveCaptcha("form img", "input[type=text]");
+        scraper.clickOn("button[type=submit]");
+        scraper.waitForLoading();
+      })
       .clickOn("#ap_small_forgot_password_span a")
       .waitForLoading()
       .fillIn("#ap_email", email)
@@ -28,9 +35,16 @@ const amazonTask = Task({
   },
 
   setNewPassword: function(scraper, password) {
-    scraper.fillIn("#ap_fpp_password", password)
-      .fillIn("#ap_fpp_password_check", password)
-      .clickOn("#continue-input");
+    scraper.expect("input[name=password]")
+      .catch(function() {
+        //there is another bot check
+        scraper.solveCaptcha("form img", "input[type=text]");
+        scraper.clickOn("button[type=submit]");
+        scraper.waitForLoading();
+      })
+      .fillIn("input[name=password]", password)
+      .fillIn("input[name=passwordCheck]", password)
+      .clickOn("input[type=submit]");
   },
 
   login: function(scraper, email, password) {

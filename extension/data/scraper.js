@@ -1,4 +1,25 @@
-/* globals self, window, document, Event */
+/* 
+* This content script contains all callbacks for the `util/scraper` class.
+*/
+
+const EVENTS = {
+  fillIn: "fillIn",
+  filledIn: "filledIn",
+  clickOn: "clickOn",
+  clickedOn: "clickedOn",
+  getText: "getText",
+  gotText: "gotText",
+  getElement: "getElement",
+  gotElement: "gotElement",
+  getValue: "getValue",
+  gotValue: "gotValue",
+  getAttribute: "getAttribute",
+  gotAttribute: "gotAttribute",
+  waitForElement: "waitForElement",
+  waitedForElement: "waitedForElement",
+  showErrorDialog: "showErrorDialog",
+  loaded: "loaded"
+};
 
 /**
 * Sets the value of a form field.
@@ -7,7 +28,7 @@
 * @param {String} selector The CSS selector of the field
 * @param {String} value The new value of the field
 */
-self.port.on("fillIn", function(selector, value) {
+self.port.on(EVENTS.fillIn, function(selector, value) {
   var element = document.querySelector(selector);
 
   if(element) {
@@ -24,9 +45,9 @@ self.port.on("fillIn", function(selector, value) {
     fakeChangeEvent.target = element;
     element.dispatchEvent(fakeChangeEvent);
 
-    self.port.emit("filledIn");
+    self.port.emit(EVENTS.filledIn);
   } else {
-    self.port.emit("filledIn", "Element does not exist: " + selector);
+    self.port.emit(EVENTS.filledIn, "Element does not exist: " + selector);
   }
 });
 
@@ -35,78 +56,113 @@ self.port.on("fillIn", function(selector, value) {
 *
 * @param {String} selector The CSS selector for the element.
 */
-self.port.on("clickOn", function(selector) {
+self.port.on(EVENTS.clickOn, function(selector) {
   var element = document.querySelector(selector);
 
   if(element) {
     element.click();
-    self.port.emit("clickedOn");
+    self.port.emit(EVENTS.clickedOn;
   } else {
-    self.port.emit("clickedOn", "Element does not exist: " + selector);
+    self.port.emit(EVENTS.clickedOn, "Element does not exist: " + selector);
   }
 });
 
-
-self.port.on("getText", function(selector) {
+/**
+* Gets the text inside an element.
+*
+* @param {String} selector The CSS selector for the element.
+*/
+self.port.on(EVENTS.getText, function(selector) {
   var element = document.querySelector(selector);
 
   if(element) {
-    self.port.emit("gotText", element.textContent);
+    self.port.emit(EVENTS.gotText, element.textContent);
   } else {
-    self.port.emit("gotText", "", "Element does not exist: " + selector);
+    self.port.emit(EVENTS.gotText, "", "Element does not exist: " + selector);
   }
 });
 
-self.port.on("getElement", function(selector) {
+
+/**
+* Gets an element.
+* Returns nothing, but an error if the element doesn't exist
+*
+* @param {String} selector The CSS selector for the element.
+*/
+self.port.on(EVENTS.getElement, function(selector) {
   var element = document.querySelector(selector);
 
   if(element) {
-    self.port.emit("gotElement");
+    self.port.emit(EVENTS.gotElement);
   } else {
-    self.port.emit("gotElement", "", "Element does not exist: " + selector);
+    self.port.emit(EVENTS.gotElement, "Element does not exist: " + selector);
   }
 });
 
-self.port.on("getValue", function(selector) {
+
+/**
+* Gets the value of an element.
+*
+* @param {String} selector The CSS selector for the element.
+*/
+self.port.on(EVENTS.getValue, function(selector) {
   var element = document.querySelector(selector);
 
   if(element) {
-    self.port.emit("gotValue", element.value);
+    self.port.emit(EVENTS.gotValue, element.value);
   } else {
-    self.port.emit("gotValue", null, "Element does not exist: " + selector);
+    self.port.emit(EVENTS.gotValue, null, "Element does not exist: " + selector);
   }
 });
 
-self.port.on("getAttribute", function(selector, attributeName) {
+
+/**
+* Gets an attribute value of an element.
+* An image src attribute will be parsed into a dataUrl if possible.
+*
+* @param {String} selector The CSS selector for the element.
+* @param {String} attributeName Name of the attribute.
+*/
+self.port.on(EVENTS.getAttribute, function(selector, attributeName) {
   const element = document.querySelector(selector);
 
   let attribute = null;
 
   if(element) {
-    // if(attributeName === "src" && element.tagName === "IMG") {
-    //   const canvas = document.createElement("canvas");
-    //   const ctx = canvas.getContext("2d");
-    //   canvas.width = element.width;
-    //   canvas.height = element.height;
+    if(attributeName === "src" && element.tagName === "IMG") {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = element.width;
+      canvas.height = element.height;
 
-    //   ctx.drawImage(element, 0, 0);
+      ctx.drawImage(element, 0, 0);
 
-    //   attribute = canvas.toDataURL();
-    // } else {
-
-    attribute = element.getAttribute(attributeName);
-
-    //}
+      try {
+        // may fail due to cross origin policy
+        attribute = canvas.toDataURL();
+      } catch (e) {
+        attribute = element.src;
+      }
+    } else {
+      attribute = element.getAttribute(attributeName);
+    }
   }
   
   if(attribute) {
-    self.port.emit("gotAttribute", attribute);
+    self.port.emit(EVENTS.gotAttribute, attribute);
   } else {
-    self.port.emit("gotAttribute", null, "Attribute " + attributeName + " does not exist on " + selector);
+    self.port.emit(EVENTS.gotAttribute, null, "Attribute " + attributeName + " does not exist on " + selector);
   }
 });
 
-self.port.on("waitForElement", function(selector, time) {
+
+/**
+* Waits a specified amound of time for an element to appear.
+*
+* @param {String} selector The CSS selector for the element.
+* @param {String} time Maximal time to wait
+*/
+self.port.on(EVENTS.waitForElement, function(selector, time) {
 
   const start = Date.now();
 
@@ -114,9 +170,9 @@ self.port.on("waitForElement", function(selector, time) {
     const element = document.querySelector(selector);
 
     if(element) {
-      self.port.emit("waitedForElement");
+      self.port.emit(EVENTS.waitedForElement);
     } else if (Date.now() - start > time){
-      self.port.emit("waitedForElement", "Timed out waiting for element " + selector);
+      self.port.emit(EVENTS.waitedForElement, "Timed out waiting for element " + selector);
     } else {
       window.setTimeout(wait, 200);
     }
@@ -126,7 +182,12 @@ self.port.on("waitForElement", function(selector, time) {
 });
 
 
-self.port.on("showErrorDialog", function(error) {
+/**
+* Displays a simple message box with an error.
+*
+* @param {String} error The error message
+*/
+self.port.on(EVENTS.showErrorDialog, function(error) {
   const popup = document.createElement("div");
   popup.className = "recoverer-popup recoverer-popup-error";
 
@@ -139,5 +200,7 @@ self.port.on("showErrorDialog", function(error) {
   document.body.appendChild(popup);
 });
 
-self.port.emit("loaded", window.location.href);
+
+
+self.port.emit(EVENTS.loaded, window.location.href);
 
