@@ -1,9 +1,27 @@
 const { Class } = require("sdk/core/heritage");
 
+/**
+* This is a captcha solver that works to the main content script.
+* It lets the user solve the captcha.
+*/
 const UserCaptchaSolver = Class({
+
+  /**
+  * @param {Worker} worker
+  *   Worker connected to the main content script.
+  */
   initialize: function(worker) {
     this._worker = worker;
   },
+
+  /**
+  * Solves a captcha.
+  *
+  * @param {Srting} imageSrc
+  *   Src URL of the image
+  * @return {Promise} 
+  *   A promise that gets resolved with the user provided solution.
+  */
   solveCaptcha: function(imageSrc) {
     const self = this;
 

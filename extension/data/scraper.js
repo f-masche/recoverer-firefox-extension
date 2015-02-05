@@ -61,7 +61,7 @@ self.port.on(EVENTS.clickOn, function(selector) {
 
   if(element) {
     element.click();
-    self.port.emit(EVENTS.clickedOn;
+    self.port.emit(EVENTS.clickedOn);
   } else {
     self.port.emit(EVENTS.clickedOn, "Element does not exist: " + selector);
   }
