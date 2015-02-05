@@ -207,8 +207,14 @@ const GmailClient = Class({
     var url = GMAIL_HOST + "/users/me/messages?q=";
 
     if(filters) {
-      for(let name in filters) {
-        url += name + ":" + filters[name] + " ";
+      const keys = Object.keys(filters);
+      for(let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        url += key + ":" + filters[key];
+
+        if(i < keys.length - 1) {
+          url += " ";
+        }
       }  
     }
 
