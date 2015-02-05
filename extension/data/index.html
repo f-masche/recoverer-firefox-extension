@@ -22,7 +22,7 @@
 
             <div class="list-group">
               <a href="#" data-ng-repeat="task in tasks" class="list-group-item" data-ng-click="clickedTask(task)">
-                <img src="{{ task.loginUrl | favicon }}"/>
+                <img data-ng-src="{{ task.loginUrl | favicon }}" alt="icon"/>
                 {{ task.name }}
               </a>
             </div>
@@ -56,7 +56,7 @@
           </div>
 
           <div class="panel-body">
-            <div ng-hide="status=='error'" class="spinner center-block"></div>
+            <div data-ng-hide="status=='error'" class="spinner center-block"></div>
 
             <div data-ng-switch="status">
 
