@@ -315,5 +315,29 @@ exports["test scraper should get text and then follow a link"] = function(assert
   });
 };
 
+exports["test scraper should check for an element and catch the error"] = function(assert, done) {
+
+  var called = false;
+
+  const scraper = Scraper({
+    url: self.data.url("./test-1.html"),
+    captchaSolver: captchaSolver
+  });
+
+  scraper.expect("#nothing").catch(function(){
+
+    scraper.getText("#page").then(function(text) {
+      assert.equal("2", text);
+      called = true;
+    });
+  });
+
+  scraper.run().then(function() {
+    assert.ok(called);
+    scraper._tab.close();
+    done();
+  });
+};
+
 
 require("sdk/test").run(exports);

@@ -491,6 +491,12 @@ const Scraper =  Class({
 
   then: function(onResolve, onReject) {
     this._addAction(ThenAction(this, onResolve, onReject));
+    return this;
+  },
+
+  catch: function(onReject) {
+    this._addAction(ThenAction(this, null, onReject));
+    return this;
   },
 
   run: function() {
