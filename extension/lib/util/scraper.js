@@ -91,7 +91,7 @@ const InitAction = Class({
 
     this.scraper._tab = tab;
 
-    tab.on("ready", function(tab) {
+    tab.on("load", function(tab) {
       console.log(TAG, "on " + tab.url);
       self.scraper.url = tab.url;
       self.scraper._worker = tab.attach({
@@ -99,7 +99,7 @@ const InitAction = Class({
       });
     });
 
-    tab.once("ready", function() {
+    tab.once("load", function() {
       //bugfix @see WaitForLoadingAction#handler
       setTimeout(resolve, 1);
     });
@@ -160,7 +160,7 @@ const WaitForLoadingAction = Class({
     const self = this;
 
     const timeoutId = setTimeout(function() {
-      self.scraper._tab.off("ready", onReadyHandler);
+      self.scraper._tab.off("load", onReadyHandler);
       console.error(TAG, "Timed out while waiting for page to load");
       reject("Timed out while waiting for page to load");
     }, this.maxTime);
@@ -179,7 +179,7 @@ const WaitForLoadingAction = Class({
       }, 1);
     };
 
-    this.scraper._tab.once("ready", onReadyHandler);
+    this.scraper._tab.once("load", onReadyHandler);
   }
 });
 
@@ -766,7 +766,7 @@ const Scraper =  Class({
   *   This scraper
   */
   catch: function(onReject) {
-    return this._addAction(ThenAction(this, null, onReject));
+    return this.then(null, onReject);
   },
 
   /**
