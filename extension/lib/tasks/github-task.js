@@ -15,11 +15,17 @@ const githubTask = Task({
     subject: "github reset password"
   },
 
-  resetPassword: function(scraper, catchaSolver, email) {
+  resetPassword: function(scraper, email) {
     scraper.clickOn("#login label[for=password] a")
       .waitForLoading()
       .fillIn("#email_field", email)
-      .clickOn("#forgot_password_form input[type=submit]");
+      .clickOn("#forgot_password_form input[type=submit]")
+      .waitForLoading().then(function (){
+        //everything worked so far
+
+        //check if there is an error message
+        scraper.getText(".flash-error").then(Promise.reject, Promise.resolve);       
+      });
   },
 
   setNewPassword: function(scraper, password) {

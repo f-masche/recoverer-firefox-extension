@@ -17,21 +17,23 @@ const amazonTask = Task({
   },
 
   resetPassword: function(scraper, email) {
+    var self = this;
 
-    scraper.clickOn("#nav-flyout-ya-signin a")
-      .waitForLoading()
-      .expect("#ap_small_forgot_password_span a")
-      .catch(function() {
-        //no password reset link, so there is a bot check
-        scraper.solveCaptcha("form img", "input[type=text]");
-        scraper.clickOn("button[type=submit]");
-        scraper.waitForLoading();
-      })
-      .clickOn("#ap_small_forgot_password_span a")
-      .waitForLoading()
-      .fillIn("#ap_email", email)
-      .solveCaptcha("#ap_captcha_img > img", "#ap_captcha_guess")
-      .clickOn("#continue-input");
+    return scraper.run(function() {
+      this.goTo(self.loginUrl);
+      this.getElement("#nav-flyout-ya-signin a").click();
+      this.waitForLoading();
+      this.ifElement("#ap_small_forgot_password_span a").not().exists(function() {
+        this.solveCaptcha("form img", "input[type=text]");
+        this.getElement("button[type=submit]").click();
+        this.waitForLoading();  
+      });
+      this.getElement("#ap_small_forgot_password_span a").click();
+      this.waitForLoading();
+      this.getElement("#ap_email").fillIn(email);
+      this.solveCaptcha("#ap_captcha_img > img", "#ap_captcha_guess");
+      this.getElement("#continue-input").click();
+    });
   },
 
   setNewPassword: function(scraper, password) {

@@ -1,0 +1,6 @@
+ifElement => exists | notE
+ifURL => is | notU
+notE => exists | notE
+notU => exists | notU
+getElement => text | value | attribute | click
+waitForLoading => 

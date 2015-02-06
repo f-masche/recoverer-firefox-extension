@@ -11,30 +11,26 @@ const ElementExists = Class({
 
   /**
   * Creates a new ElementExists operation.
-  *
-  * @param {String} selector 
-  *   The selector for the expected element
   */
-  initialize: function(selector) {
+  initialize: function() {
     Operation.prototype.initialize.call(this, "elementExists");
-    this.selector = selector;
   },
 
   handler: function(runtime, success) {
-    const self = this;
+    const selector = runtime.stack.pop();
 
-    console.log("Looking for " + this.selector);
+    console.log("Looking for " + selector);
 
-    runtime.worker.port.emit("getElement", this.selector);
+    runtime.worker.port.emit("getElement", selector);
 
     runtime.worker.port.once("gotElement", function(error) {
 
       if (error) {
-        console.log("Couldn't find " + self.selector);
+        console.log("Couldn't find " + selector);
         runtime.stack.push(false);
       } else {
         runtime.stack.push(true);
-        console.log("Found " + self.selector);
+        console.log("Found " + selector);
       }
       success();
     });
