@@ -1,4 +1,4 @@
-const { Class, extend } = require("sdk/core/heritage");
+const { Class, mix } = require("sdk/core/heritage");
 const { EventTarget } = require("sdk/event/target");
 const { contract } = require("sdk/util/contract");
 const { emit } = require("sdk/event/core");
@@ -126,6 +126,7 @@ const TaskRunner = Class({
     return this._scraper.run().then(function() {
       self.loginTab.url = self._scraper.url;
       self._setStatus(EVENTS.loggedIn);
+      
       return Promise.resolve();
     });
   },
@@ -133,12 +134,14 @@ const TaskRunner = Class({
   _setEmailAsRead: function() {
     //if password link was used the email should be marked as read
     this._setStatus(EVENTS.updatingEmail);
+
     return this.emailSource.setEmailAsRead(this.email.original.id);
   },
 
   _getEmail: function() {
     this._setStatus(EVENTS.waitingForEmail);
-    const filters = extend(this.task.emailFilters, {in: "inbox", is: "unread"});
+    const filters = mix({in: "inbox", is: "unread"}, this.task.emailFilters);
+
     return this.emailSource.waitForEmail(filters);
   },
 

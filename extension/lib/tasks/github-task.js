@@ -36,6 +36,5 @@ const githubTask = Task({
   }
 });
 
-Object.freeze(githubTask);
 
 exports.task = githubTask;

@@ -16,14 +16,14 @@ const GmailEmailSource = Class({
     this._gmailClient = GmailClient(userId);
   },
 
-  waitForEmail: function(filter) {      
+  waitForEmail: function(filters) {      
     const self = this;
     var times = 0;
 
     const fetchEmail = function(resolve, reject) {
 
       self._gmailClient
-        .listMessages(filter)
+        .listMessages(filters)
         .then(function( result ) {
           const messages = result.messages;
           const message = messages && messages.length && messages[0];

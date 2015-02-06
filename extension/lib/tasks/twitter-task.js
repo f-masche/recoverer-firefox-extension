@@ -46,6 +46,4 @@ const twitterTask = Task({
 });
 
 
-Object.freeze(twitterTask);
-
 exports.task = twitterTask;

@@ -69,6 +69,4 @@ const amazonTask = Task({
   }
 });
 
-Object.freeze(amazonTask);
-
 exports.task = amazonTask;
