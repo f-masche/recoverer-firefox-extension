@@ -11,16 +11,16 @@ const recoverer = angular.module("Recoverer", []); //jshint ignore:line
 */
 recoverer.controller("AppController", function($scope, port) {
 
-  port.on(port.events.getTasks, function(tasks) {
+  port.on("setTasks", function(tasks) {
     $scope.tasks = tasks;
   });
 
-  port.on(port.events.getTask, function(task) {
+  port.on("setTask", function(task) {
     $scope.task = $scope.tasks.find((t) => t.name === task.name);
     $scope.view = "signIn";
   });
 
-  port.on(port.events.setStatus, function(status, statusMessage) {
+  port.on("setStatus", function(status, statusMessage) {
     $scope.status = status;
 
     if(status === "error") {
@@ -28,7 +28,7 @@ recoverer.controller("AppController", function($scope, port) {
     }
   });
 
-  port.on(port.events.solveCaptcha, function(captchaSrc) {
+  port.on("solveCaptcha", function(captchaSrc) {
     $scope.view = "captcha";
     $scope.captchaSrc = captchaSrc;
   });
@@ -48,7 +48,7 @@ recoverer.controller("AppController", function($scope, port) {
   };
 
   $scope.solvedCaptcha = function(solution) {
-    port.emit(port.events.solvedCaptcha, solution);
+    port.emit("solvedCaptcha", solution);
     $scope.view = "pending";
   };
 
@@ -65,14 +65,6 @@ recoverer.controller("AppController", function($scope, port) {
 * Angular module wrapper for the Addon-SDKs `self.port` object.
 */
 recoverer.service("port", function($rootScope) {
-  this.events = {
-    setTasks: "setTasks",
-    setTask: "setTask",
-    setStatus: "setStatus",
-    solveCaptcha: "solveCaptcha",
-    solvedCaptcha: "solvedCaptcha"
-  };
-
   this.on = function(key, callback) {
     self.port.on(key, function() {
       callback.apply(null, arguments);
