@@ -197,6 +197,10 @@ self.port.on(EVENTS.showErrorDialog, function(error) {
   
   popup.appendChild(errorMessage);
 
+  popup.addEventListener("click", function() {
+    document.body.removeChild(popup);
+  });
+
   document.body.appendChild(popup);
 });
 

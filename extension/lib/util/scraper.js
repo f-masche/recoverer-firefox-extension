@@ -9,92 +9,61 @@ const TAG = "scraper:";
 
 
 /**
-* Base class for a scraper Action.
-* An Action is a atomic command for the scraper.
-* Each Action has a run method that invokes its asynchronous handler method.
-* The `run` method returns a promise that gets resolved/rejected, once the handler is done.
-* This is needed to queue and chain multiple actions.
+* Base class for a scraper Operation.
+* An Operation is an atomic operation for the scraper.
+* Each Operation has an asynchronous handler method.
+* This is needed to queue and chain multiple Operations.
 */
-const Action = Class({
-
-  /**
-  * Creates a new Action.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
-  * @param {name} name 
-  *   The name of this action
-  */
-  initialize: function(scraper, name) {
-    this.scraper = scraper;
-    this.name = name;
-  },
-
+const Operation = Class({
   /**
   * This method must be overwritten.
   *
-  * It contains the logic for the specific Action.
+  * It contains the logic for the specific Operation.
   * It will be called in the `run` method.
   *
-  * @param {function} resolve 
+  * @param {Scraper} scraper 
+  *   The scraper
+  * @param {function} success 
   *   Called when the handler finished successfully
-  * @param {function} reject 
+  * @param {function} failure 
   *   Called when the handler finished with an error
   */
-  handler: function(resolve, reject) { // jshint ignore:line
-    resolve();
-  },
-
-  /**
-  * Starts this action.
-  * 
-  * @return {Promise} 
-  *   Promise that gets resolved/rejected when the action is finished.
-  */
-  run: function() {
-    return new Promise(this.handler.bind(this));
+  handler: function(scraper, success, failure) { // jshint ignore:line
+    success();
   }
 });
 
 
 /**
-* The InitAction is the first default action in the scraper.
+* The Init operation is the first default Operation in the scraper.
 * It creates a new Tab and loads the content script. 
 */
-const InitAction = Class({
+const Init = Class({
 
-  extends: Action,
+  extends: Operation,
 
-  /**
-  * Creates a new InitAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
-  */
-  initialize: function(scraper) {
-    Action.prototype.initialize.call(this, scraper, "init");
+  initialize: function() {
+    this.name = "init";
   },
 
-  handler: function(resolve) {
+  handler: function(scraper, success) {
     const self = this;
 
     tabs.open({
-      url: this.scraper.url,
+      url: "about:blank",
       onOpen: function(tab) {
-        self.initTab(tab, resolve);
+        self.initTab(tab, scraper, success);
       }
     });
   },
 
-  initTab: function(tab, resolve) {
-    const self = this;
-
-    this.scraper._tab = tab;
+  initTab: function(tab, scraper, resolve) {
+    scraper._tab = tab;
 
     tab.on("load", function(tab) {
       console.log(TAG, "on " + tab.url);
-      self.scraper.url = tab.url;
-      self.scraper._worker = tab.attach({
+      scraper.url = tab.url;
+      scraper._worker = tab.attach({
         contentScriptFile: ["./scraper.js"]
       });
     });
@@ -108,61 +77,49 @@ const InitAction = Class({
 
 
 /**
-* The GoToAction loads a specific URL in the scraper tab.
+* The GoTo operation loads a specific URL in the scraper tab.
 */
-const GoToAction = Class({
+const GoTo = Class({
 
-  extends: Action,
+  extends: Operation,
 
   /**
-  * Creates a new GoToAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
   * @param {String} url 
   *   The URL to load
   */
-  initialize: function(scraper, url) {
-    Action.prototype.initialize.call(this, scraper, "goTo");
+  initialize: function(url) {
     this.url = url;
+    this.name = "goTo";
   },
 
-  handler: function(resolve) {
+  handler: function(scraper, success) {
     console.log(TAG, "Going to " + this.url);
-    this.scraper._tab.url = this.url;
-    resolve();
+    scraper._tab.url = this.url;
+    success();
   }
 });
 
 
 /**
-* The WaitForLoadingAcrion waits until the ready event is fired on the scraper tab.
+* The WaitForLoading operation waits until the ready event is fired on the scraper tab.
 */
-const WaitForLoadingAction = Class({
+const WaitForLoading = Class({
 
-  extends: Action,
+  extends: Operation,
 
   maxTime: 5000,
 
-  /**
-  * Creates a new WaitForLoadingAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
-  */
-  initialize: function(scraper) {
-    Action.prototype.initialize.call(this, scraper, "waitForLoading");
+  initialize: function() {
+    this.name = "waitForLoading";
   },
 
-  handler: function(resolve, reject) {
+  handler: function(scraper, success, failure) {
     console.log(TAG, "Waiting for load");
 
-    const self = this;
-
     const timeoutId = setTimeout(function() {
-      self.scraper._tab.off("load", onReadyHandler);
+      scraper._tab.off("load", onReadyHandler);
       console.error(TAG, "Timed out while waiting for page to load");
-      reject("Timed out while waiting for page to load");
+      failure("Timed out while waiting for page to load");
     }, this.maxTime);
 
     const onReadyHandler = function(tab) {
@@ -171,97 +128,92 @@ const WaitForLoadingAction = Class({
       clearTimeout(timeoutId);
       
       // bugfix
-      // If this is the last action in the stack, firefox throws a
+      // If this is the last Operation in the stack, firefox throws a
       // TypeError "can't access dead object"
       // The source of the error is unknown, but the timeout seems to prevent it
       setTimeout(function() {
-        resolve(tab.url);
+        success(tab.url);
       }, 1);
     };
 
-    this.scraper._tab.once("load", onReadyHandler);
+    scraper._tab.once("load", onReadyHandler);
   }
 });
 
 
 /**
-* The ExpectAction looks for a certain element.
-* It will fail if the element doesn't exist.
+* The IfExists operation looks for a certain element and calls a callback if it exists.
 */
-const ExpectAction = Class({
+const IfExists = Class({
 
-  extends: Action,
+  extends: Operation,
 
   /**
-  * Creates a new ExpectAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
   * @param {String} selector 
   *   The selector for the expected element
   */
-  initialize: function(scraper, selector) {
-    Action.prototype.initialize.call(this, scraper, "expect");
+  initialize: function(selector, callback, negated) {
     this.selector = selector;
+    this.callback = callback;
+    this.negated = negated;
+    this.name = "ifExists";
   },
 
-  handler: function(resolve, reject) {
+  handler: function(scraper, success) {
     const self = this;
 
     console.log(TAG, "Looking for " + this.selector);
 
-    this.scraper._worker.port.emit("getElement", this.selector, this.attribute);
+    scraper._worker.port.emit("getElement", this.selector, this.attribute);
 
-    this.scraper._worker.port.once("gotElement", function(error) {
+    scraper._worker.port.once("gotElement", function(error) {
 
-      if (error) {
-        console.log(TAG, "Expected to see " + self.selector);
-        reject("Expected to see " + self.selector);
-      } else {
-        console.log(TAG, "Found " + self.selector);
-        resolve();
+      if(self.negated) {
+        error = !error;
       }
+
+      if (!error) {  
+        self.callback();
+      }
+
+      success();
     });
   }
 });
 
 
 /**
-* The GetTextAction gets the text content of an element.
+* The GetText operation gets the text content of an element.
 * It will fail if the element doesn't exist.
 */
-const GetTextAction = Class({
+const GetText = Class({
 
-  extends: Action,
+  extends: Operation,
 
   /**
-  * Creates a new GetTextAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
   * @param {String} selector 
   *   The selector for the element with the text
   */
-  initialize: function(scraper, selector) {
-    Action.prototype.initialize.call(this, scraper, "getText");
+  initialize: function(selector) {
     this.selector = selector;
+    this.name = "getText";
   },
 
-  handler: function(resolve, reject) {
+  handler: function(scraper, success, failure) {
     const self = this;
 
     console.log(TAG, "Looking for text in " + this.selector);
 
-    this.scraper._worker.port.emit("getText", this.selector);
+    scraper._worker.port.emit("getText", this.selector);
 
-    this.scraper._worker.port.once("gotText", function(text, error) {
+    scraper._worker.port.once("gotText", function(text, error) {
       if (error) {
         console.log(TAG, error);
-        reject("Could not get text in " + self.selector);
+        failure("Could not get text in " + self.selector);
       } else {
         console.log(TAG, "Got text: " + text);
-        self.scraper.results.push(text);
-        resolve(text);
+        scraper.results.push(text);
+        success();
       }
     });
   }
@@ -269,41 +221,37 @@ const GetTextAction = Class({
 
 
 /**
-* The GetValueAction gets the value of an element.
+* The GetValue operation gets the value of an element.
 * It will fail if the element doesn't exist.
 */
-const GetValueAction = Class({
+const GetValue = Class({
 
-  extends: Action,
+  extends: Operation,
 
   /**
-  * Creates a new GetValueAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
   * @param {String} selector 
   *   The selector for the element with the value
   */
-  initialize: function(scraper, selector) {
-    Action.prototype.initialize.call(this, scraper, "getValue");
+  initialize: function(selector) {
     this.selector = selector;
+    this.name = "getValue";
   },
 
-  handler: function(resolve, reject) {
+  handler: function(scraper, success, failure) {
     const self = this;
 
     console.log(TAG, "Looking for value in " + this.selector);
 
-    this.scraper._worker.port.emit("getValue", this.selector);
+    scraper._worker.port.emit("getValue", this.selector);
 
-    this.scraper._worker.port.once("gotValue", function(value, error) {
+    scraper._worker.port.once("gotValue", function(value, error) {
       if (error) {
         console.log(TAG, error);
-        reject("Could not get value in " + self.selector);
+        failure("Could not get value in " + self.selector);
       } else {
         console.log(TAG, "Got value: " + value);
-        self.scraper.results.push(value);
-        resolve(value);
+        scraper.results.push(value);
+        success();
       }
     });
   }
@@ -311,43 +259,37 @@ const GetValueAction = Class({
 
 
 /**
-* The FillInAction will fill a text into an input field.
+* The FillIn operation will fill a text into an input field.
 * Fails if the input field doesn't exist. 
 */
-const FillInAction = Class({
+const FillIn = Class({
 
-  extends: Action,
+  extends: Operation,
 
   /**
-  * Creates a new FillInAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
   * @param {String} selector 
   *   The selector for the input field 
   * @param {String} text 
   *   The text to fill in
   */
-  initialize: function(scraper, selector, value) {
-    Action.prototype.initialize.call(this, scraper, "fillIn");
+  initialize: function(selector, value) {
     this.selector = selector;
     this.value = value;
+    this.name = "fillIn";
   },
 
-  handler: function(resolve, reject) {
-    const self = this;
-
+  handler: function(scraper, success, failure) {
     console.log(TAG, "Filling in value " + this.value + " in to " + this.selector);
+    const self = this;
+    scraper._worker.port.emit("fillIn", this.selector, this.value);
 
-    this.scraper._worker.port.emit("fillIn", this.selector, this.value);
-
-    this.scraper._worker.port.once("filledIn", function(error) {
+    scraper._worker.port.once("filledIn", function(error) {
       if(error) {
         console.log(TAG, error);
-        reject("Could not fill in " + self.value + " into " + self.selector);
+        failure("Could not fill in " + self.value + " into " + self.selector);
       } else {
         console.log(TAG, "Filled in value " + self.value + " in to " + self.selector);
-        resolve();
+        success();
       }
     });
   }
@@ -355,87 +297,118 @@ const FillInAction = Class({
 
 
 /**
-* The ClickOnAction simulates a user click on an element.
+* The ClickOn operation simulates a user click on an element.
 * Fails if the element doesn't exist. 
 */
-const ClickOnAction = Class({
+const ClickOn = Class({
 
-  extends: Action,
+  extends: Operation,
 
   /**
-  * Creates a new ClickOnAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
   * @param {String} selector 
   *   The selector for the element to click on
   */
-  initialize: function(scraper, selector) {
-    Action.prototype.initialize.call(this, scraper, "clickOn");
+  initialize: function(selector) {
     this.selector = selector;
+    this.name = "clickOn";
   },
 
-  handler: function(resolve, reject) {
-    const self = this;
-
+  handler: function(scraper, success, failure) {
     console.log(TAG, "Clicking on " + this.selector);
 
-    this.scraper._worker.port.emit("clickOn", this.selector);
+    const self = this;
 
-    this.scraper._worker.port.once("clickedOn", function(error) {
+    scraper._worker.port.emit("clickOn", this.selector);
+
+    scraper._worker.port.once("clickedOn", function(error) {
       if(error) {
         console.log(TAG, error);
-        reject("Could not click on " + self.selector);
+        failure("Could not click on " + self.selector);
       } else {
         console.log(TAG, "Clicked on " + self.selector);
-        resolve();
+        success();
       }
     });
   }
 });
 
-
 /**
-* The GetAttributeAction gets the value of a specific attribute.
-* Fails if the attribute or the element doesn't exist. 
+* The IfURLIs operation calls a callback if the current url matches a given pattern.
 */
-const GetAttributeAction = Class({
+const IfURLIs = Class({
 
-  extends: Action,
-
+  extends: Operation,
 
   /**
-  * Creates a new GetAttributeAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
+  * @param {String|RegEx} pattern 
+  *   The selector for the element to click on
+  * @param {Function} callback
+  *   The callback that will be called
+  * @param {boolean} negated
+  *   Negates this operation
+  */
+  initialize: function(pattern, callback, negated) {
+    this.pattern = pattern;
+    this.callback = callback;
+    this.negated = negated;
+    this.name = "ifURLIs";
+  },
+
+  handler: function(scraper, success) {
+
+    var matches = false;
+    if(this.pattern instanceof RegExp) {
+      matches = this.pattern.test(scraper._tab.url);
+    } else {
+      matches = this.pattern === scraper._tab.url;
+    }
+
+    if(this.negated) {
+      matches = !matches;
+    }
+
+    if(matches && typeof this.callback === "function") {
+      this.callback();
+    }
+    success();
+  }
+});
+
+
+/**
+* The GetAttribute operation gets the value of a specific attribute.
+* Fails if the attribute or the element doesn't exist. 
+*/
+const GetAttribute = Class({
+
+  extends: Operation,
+
+  /**
   * @param {String} selector 
   *   The selector for the element with the attribute
   * @param {String} attribute
   *   The name of the attribute
   */
-  initialize: function(scraper, selector, attribute) {
-    Action.prototype.initialize.call(this, scraper, "getAttribute");
+  initialize: function(selector, attribute) {
     this.selector = selector;
     this.attribute = attribute;
+    this.name = "getAttribute";
   },
 
-  handler: function(resolve, reject) {
-    const self = this;
-
+  handler: function(scraper, success, failure) {
     console.log(TAG, "Getting attribute " + this.attribute + " on " + this.selector);
 
-    this.scraper._worker.port.emit("getAttribute", this.selector, this.attribute);
+    scraper._worker.port.emit("getAttribute", this.selector, this.attribute);
 
-    this.scraper._worker.port.once("gotAttribute", function(value, error) {
+    scraper._worker.port.once("gotAttribute", function(value, error) {
 
       if (error) {
         console.log(TAG, "Could not find attribute " + value);
-        reject("Could not find attribute " + self.attribute + " on " + self.selector);
+        failure("Could not find attribute " + self.attribute + " on " + self.selector);
       } else {
         console.log(TAG, "Found attribute " + value);
-        self.scraper.results.push(value);
-        resolve(value);
+        scraper.results.push(value);
+        success();
       }
     });
   }
@@ -443,60 +416,53 @@ const GetAttributeAction = Class({
 
 
 /**
-* The SolveCaptchaAction enables the scraper to solve a captcha.
+* The SolveCaptcha operation enables the scraper to solve a captcha.
 * Depending on the used captcha solver this can be done by the user or automatically.
 */
-const SolveCaptchaAction = Class({
+const SolveCaptcha = Class({
 
-  extends: Action,
-
+  extends: Operation,
 
   /**
-  * Creates a new SolveCaptchaAction.
-  *
-  * @param {Scraper} scraper 
-  *   The scraper
   * @param {String} captchaImgSelector 
   *   The selector for the captcha img element
   * @param {String} captchaInputSelector
   *   The selector for the captcha text input element
-  * @param {object} captchaSolver
-  *   The captchaSolver to solve the captcha
   */
-  initialize: function(scraper, captchaImgSelector, captchaInputSelector, captchaSolver) {
-    Action.prototype.initialize.call(this, scraper, "solveCaptcha");
+  initialize: function(captchaImgSelector, captchaInputSelector) {
     this.captchaImgSelector = captchaImgSelector;
     this.captchaInputSelector = captchaInputSelector;
-    this.captchaSolver = captchaSolver;
+    this.name = "solveCaptcha";
   },
 
-  handler: function(resolve, reject) {
+  handler: function(scraper, success, failure) {
     const self = this;
 
-    this.scraper._worker.port.emit("getAttribute", this.captchaImgSelector, "src");
+    scraper._worker.port.emit("getAttribute", this.captchaImgSelector, "src");
 
-    this.scraper._worker.port.once("gotAttribute", function(value, error) {
+    scraper._worker.port.once("gotAttribute", function(value, error) {
 
       if(error) {
         console.log(TAG, "Could not find captcha image :" + self.captchaImgSelector);
-        reject("Could not find captcha image :" + self.captchaImgSelector);
+        failure("Could not find captcha image :" + self.captchaImgSelector);
       } else {
         console.log(TAG, "Found captcha image :" + value);
 
-        self.scraper._captchaSolver.solveCaptcha(value).then(function(solution) {
+        scraper._captchaSolver.solveCaptcha(value).then(function(solution) {
 
-          self.scraper._worker.port.emit("fillIn", self.captchaInputSelector, solution);
+          scraper._worker.port.emit("fillIn", self.captchaInputSelector, solution);
 
-          self.scraper._worker.port.once("filledIn", function(error) {
+          scraper._worker.port.once("filledIn", function(error) {
             if(error) {
               console.log(TAG, "Could not find captcha input field: " + self.captchaInputSelector);
-              reject("Could not find captcha input field: " + self.captchaInputSelector);
+              failure("Could not find captcha input field: " + self.captchaInputSelector);
             } else {
-              resolve(solution);
+              scraper.results.push(solution);
+              success();
             }
           });
 
-        }, reject);
+        }, failure);
       }
     });
   }
@@ -504,105 +470,71 @@ const SolveCaptchaAction = Class({
 
 
 /**
-* The WaitForElementAction waits until a specific element appears on the page.
-* It gets rejected after a timeout.
+* The WaitForElement operation waits until a specific element appears on the page.
 */
-const WaitForElementAction = Class({
+const WaitForElement = Class({
 
-  extends: Action,
+  extends: Operation,
 
   /**
-  * Creates a new WaitForElementAction
-  *
-  * @param {Scraper} scraper
-  *   The scraper
   * @param {String} selector
   *   The selector for the element to wait for
   */
-  initialize: function(scraper, selector) {
-    Action.prototype.initialize.call(this, scraper, "waitForElement");
+  initialize: function(selector) {
     this.selector = selector;
+    this.name = "waitForElement";
   },
 
-  handler: function(resolve, reject) {
+  handler: function(scraper, success) {
     console.log(TAG, "Waiting for element " + this.selector);
 
-    const self = this;
     const time = 2000;
 
     var timeoutId = -1;
 
-    this.scraper._worker.port.emit("waitForElement", this.selector, time);
+    scraper._worker.port.emit("waitForElement", this.selector, time);
 
-    const handler = function(error) {
+    const handler = function() {
       console.log(TAG, "Waited for element " + this.selector);
       clearTimeout(timeoutId);
-
-      //bugfix @see WaitForLoadingAction#handler
-      setTimeout(function() {
-        if(error) {
-          console.log(TAG, "Timed out while waiting for element " + self.selector);
-          reject("Timed out while waiting for element " + self.selector);
-        } else {
-          resolve();
-        }
-      }, 1);
+      success();
     };
 
-    this.scraper._worker.port.once("waitedForElement", handler);
+    scraper._worker.port.once("waitedForElement", handler);
   
     //set a second timeout independent to the content script
     //the content script could be unloaded so the event never gets fired
     timeoutId = setTimeout(function() {
-      self.scraper._worker.port.off("waitedForElement", handler);
-      console.log(TAG, "Timed out while waiting for element " + self.selector);
-      reject("Timed out while waiting for element " + self.selector);
+      scraper._worker.port.off("waitedForElement", handler);
+      console.log(TAG, "Waited for element " + this.selector);
+      success();
     }, time * 1.5);
   }
 });
 
 
 /**
-* The ThenAction can be inserted after every other action.
-* It allows to process the result of the previous actions while the scraper is running.
-* It works like the `Promise.then` function.
-* Also it allows to dynamically insert actions to the running scrapers stack.
+* Lete the scraper fail with a given reason.
 */
-const ThenAction = Class({
-
-  extends: Action,
+const Fail = Class({
+  extends: Operation,
 
   /**
-  * Creates a new ThenAction
-  *
-  * @param {Scraper} scraper
-  *   The scraper
-  * @param {function} onResolve
-  *   This function will get called, after the previous Action has been resolved
-  * @param {function} onResolve
-  *   This function will be called, after the previous Action has been rejected
+  * @param {String} reason
+  *   The reason on the failure
   */
-  initialize: function(scraper, onResolve, onReject) {
-    Action.prototype.initialize.call(this, scraper, "then");
-    this.onResolve = onResolve;
-    this.onReject = onReject;
-
-    this.scraper._stackInsertIndex -= 1;
-    this.lastAction = this.scraper._stack.splice(this.scraper._stackInsertIndex, 1)[0];
+  initialize: function(reason) {
+    this.reason = reason;
+    this.name = "fail";
   },
-
-  run: function() {
-    this.scraper._stackInsertIndex = 0;
-    return this.lastAction.run().then(this.onResolve, this.onReject);
+  handler: function(scraper, success, failure) {
+    failure(this.reason);
   }
 });
 
 
 
 const scraperContract = contract({
-  url: {
-    is: ["string"]
-  },
   captchaSolver: {
     is: ["object"]
   }
@@ -617,38 +549,71 @@ const Scraper =  Class({
 
     scraperContract(options);
 
-    this.url = options.url;
     this.results = [];
 
     this._captchaSolver = options.captchaSolver;
     this._stack = [];
     this._stackInsertIndex = 0;
 
-    this._addAction(InitAction(this));
+    this._addOperation(Init());
 
     console.log(TAG, "new scraper on: " + this.url);
   },
 
   /**
-  * @see GoToAction
+  * @see GoTo
   *
   * @return {Scraper} 
   *   This scraper
   */
   goTo: function(url) {
-    this._addAction(GoToAction(this, url));
-    this._addAction(WaitForLoadingAction(this));
+    this._addOperation(GoTo(url));
+    this._addOperation(WaitForLoading());
     return this;
   },
 
+
   /**
-  * @see ExpectAction
+  * @see IfExists
   *
   * @return {Scraper} 
   *   This scraper
   */
-  expect: function(selector) {
-    this._addAction(ExpectAction(this, selector));
+  ifExists: function(selector, callback) {
+    this._addOperation(IfExists(selector, callback, false));
+    return this;
+  },
+
+  /**
+  * @see IfExists
+  *
+  * @return {Scraper} 
+  *   This scraper
+  */
+  ifExistsNot: function(selector, callback) {
+    this._addOperation(IfExists(selector, callback, true));
+    return this;
+  },
+
+  /**
+  * @see IfURLIs
+  *
+  * @return {Scraper} 
+  *   This scraper
+  */
+  ifURLIs: function(pattern, callback) {
+    this._addOperation(IfURLIs(pattern, callback, false));
+    return this;
+  },
+
+  /**
+  * @see IfURLIs
+  *
+  * @return {Scraper} 
+  *   This scraper
+  */
+  ifURLIsNot: function(pattern, callback) {
+    this._addOperation(IfURLIs(pattern, callback, true));
     return this;
   },
 
@@ -659,7 +624,7 @@ const Scraper =  Class({
   *   This scraper
   */
   waitForLoading: function() {
-    this._addAction(WaitForLoadingAction(this));
+    this._addOperation(WaitForLoading());
     return this;
   },
 
@@ -670,7 +635,7 @@ const Scraper =  Class({
   *   This scraper
   */
   waitForElement: function(selector) {
-    this._addAction(WaitForElementAction(this, selector));
+    this._addOperation(WaitForElement(selector));
     return this;
   },
 
@@ -681,7 +646,7 @@ const Scraper =  Class({
   *   This scraper
   */
   fillIn: function(selector, value) {
-    this._addAction(FillInAction(this, selector, value));
+    this._addOperation(FillIn(selector, value));
     return this;
   },
 
@@ -700,8 +665,9 @@ const Scraper =  Class({
   * @return {Scraper} 
   *   This scraper
   */
-  clickOn: function(selector) {
-    this._addAction(ClickOnAction(this, selector));
+  clickAndWait: function(selector) {
+    this._addOperation(ClickOn(selector));
+    this._addOperation(WaitForLoading());
     return this;
   },
   /**
@@ -711,7 +677,7 @@ const Scraper =  Class({
   *   This scraper
   */
   solveCaptcha: function(captchaImgSelector, captchaInputSelector) {
-    this._addAction(SolveCaptchaAction(this, captchaImgSelector, captchaInputSelector));
+    this._addOperation(SolveCaptcha(captchaImgSelector, captchaInputSelector));
     return this;
   },
 
@@ -722,7 +688,7 @@ const Scraper =  Class({
   *   This scraper
   */
   getText: function(selector) {
-    this._addAction(GetTextAction(this, selector));
+    this._addOperation(GetText(selector));
     return this;
   },
 
@@ -733,7 +699,7 @@ const Scraper =  Class({
   *   This scraper
   */
   getValue: function(selector) {
-    this._addAction(GetValueAction(this, selector));
+    this._addOperation(GetValue(selector));
     return this;
   },
 
@@ -744,29 +710,18 @@ const Scraper =  Class({
   *   This scraper
   */
   getAttribute: function(selector, attribute) {
-    this._addAction(GetAttributeAction(this, selector, attribute));
+    this._addOperation(GetAttribute(selector, attribute));
     return this;
   },
 
   /**
-  * @see ThenAction
+  * @see Fail
   *
   * @return {Scraper} 
   *   This scraper
   */
-  then: function(onResolve, onReject) {
-    this._addAction(ThenAction(this, onResolve, onReject));
-    return this;
-  },
-
-  /**
-  * A shortcut for then(null, onReject)`
-  *
-  * @return {Scraper} 
-  *   This scraper
-  */
-  catch: function(onReject) {
-    return this.then(null, onReject);
+  fail: function(reason) {
+    this._addOperation(Fail(reason));
   },
 
   /**
@@ -787,27 +742,27 @@ const Scraper =  Class({
 
     console.log(TAG, "started");
 
-    function runAction() {
+    function next(success, failure) {
       console.log(TAG, "stack size = " + self._stack.length);
 
       if(self._stack.length) {
-        var action = self._stack.shift();
+        var op = self._stack.shift();
 
-        console.log(TAG, "running " + action.name);
+        console.log(TAG, "running " + op.name);
 
-        if(self._stackInsertIndex > 0) {
-          self._stackInsertIndex -= 1;
-        }
+        self._stackInsertIndex = 0;
 
-        return action.run().then(runAction);
+        op.handler(self, function() {
+          next(success, failure);
+        }, failure);
       } else {
         console.log(TAG, "finished");
         self._running = false;
-        return self.results;
+        success(self.results);
       }
     }
 
-    return runAction().catch(function(error) {
+    return new Promise(next).catch(function(error) {
       self._running = false;
       self._tab.activate();
       self._stack = [];
@@ -817,6 +772,8 @@ const Scraper =  Class({
       attach(style, self._tab);
 
       self._worker.port.emit("showErrorDialog", error);
+      self._tab.activate();
+
       return Promise.reject(error);
     });
   },
@@ -840,12 +797,12 @@ const Scraper =  Class({
   },
 
   /**
-  * Adds an action to the current stack.
-  * The action gets inserted at the `_stackInsertIndex`.
+  * Adds an Operation to the current stack.
+  * The Operation gets inserted at the `_stackInsertIndex`.
   */
-  _addAction: function(action) {
-    console.log(TAG, "add action: " + action.name);
-    this._stack.splice(this._stackInsertIndex, 0, action);
+  _addOperation: function(operation) {
+    console.log(TAG, "add operation: " + operation.name);
+    this._stack.splice(this._stackInsertIndex, 0, operation);
     this._stackInsertIndex += 1; 
   }
 });

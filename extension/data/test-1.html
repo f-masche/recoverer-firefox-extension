@@ -25,8 +25,9 @@
       /* global window, document */
 
       window.onload = function() {
-        const element = document.createElement("div");
+        const element = document.createElement("a");
         element.id = "dynamic";
+        element.href = "test-2.html";
         window.setTimeout(function() {
           document.body.appendChild(element);
         }, 500); 

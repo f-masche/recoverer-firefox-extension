@@ -1,19 +1,19 @@
 const { Scraper } = require("util/scraper");
-const tabs = require("sdk/tabs");
 const self = require("sdk/self");
 
 const captchaSolver = {
   solveCaptcha: function() {
-    return Promise.resolve("test");
+    return Promise.resolve("secret");
   }
 };
 
 exports["test scraper should run"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
+
+  scraper.goTo(self.data.url("./test-1.html"));
 
   scraper.run().then(function() {
     assert.pass();
@@ -23,34 +23,76 @@ exports["test scraper should run"] = function(assert, done) {
 };
 
 
-exports["test scraper should find text"] = function(assert, done) {
+exports["test scraper should fail"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
-  scraper.getText("#text-1").then(function() {
-    scraper.getText("#text-2").then(function() {
-      scraper.getText("#text-3");
-    });
+  scraper.goTo(self.data.url("./test-1.html"));
+  scraper.fail("error");
+  
+  scraper.run().catch(function(error) {
+    assert.equal(error, "error");
+    scraper._tab.close();
+    done();
+  });
+};
 
-    scraper.getText("#text-4");
+
+exports["test scraper should find text"] = function(assert, done) {
+
+  const scraper = Scraper({
+    captchaSolver: captchaSolver
   });
 
-  scraper.getText("#text-5").then(function() {
-    scraper.getText("#text-6");
-  });
+  scraper.goTo(self.data.url("./test-1.html"));
+
+  scraper.getText("#text-1");
+  scraper.getText("#text-2");
+  scraper.getText("#text-3");
 
 
   scraper.run().then(function(result) {
     assert.equal(result[0], "text 1");
     assert.equal(result[1], "text 2");
     assert.equal(result[2], "text 3");
-    assert.equal(result[3], "text 4");
-    assert.equal(result[4], "text 5");
-    assert.equal(result[5], "text 6");
+
     scraper._tab.close();
+    done();
+  });
+};
+
+exports["test scraper should follow link "] = function(assert, done) {
+
+  const scraper = Scraper({
+    captchaSolver: captchaSolver
+  });
+
+  scraper.goTo(self.data.url("./test-1.html"));
+
+  scraper.clickAndWait("a");
+
+  scraper.run().then(function() {
+    assert.equal(scraper.url, self.data.url("./test-2.html"));
+    scraper._tab.close();
+    done();
+  });
+};
+
+exports["test scraper the reject callback should be called"] = function(assert, done) {
+
+  const scraper = Scraper({
+    captchaSolver: captchaSolver
+  });
+
+  scraper.goTo(self.data.url("./test-1.html"));
+
+  scraper.clickAndWait("foo");
+
+  scraper.run().catch(function() {
+    scraper._tab.close();
+    assert.pass();
     done();
   });
 };
@@ -59,9 +101,10 @@ exports["test scraper should find text"] = function(assert, done) {
 exports["test scraper should fail getting text"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
+
+  scraper.goTo(self.data.url("./test-1.html"));
 
   scraper.getText("#nothing");
 
@@ -72,55 +115,19 @@ exports["test scraper should fail getting text"] = function(assert, done) {
     });
 };
 
-exports["test scraper should get attribute"] = function(assert, done) {
+exports["test scraper should navigate to page 2"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
-  scraper.getAttribute("a", "href").then(function(value) {
-    assert.equal(value, "test-2.html");
+  scraper.goTo(self.data.url("./test-1.html"));
+
+  scraper.ifExistsNot ("foo", function() {
+    scraper.clickAndWait("a");
   });
   
   scraper.run().then(function() {
-    scraper._tab.close();
-    done();
-  });
-};
-
-
-exports["test scraper the reject callback should be called"] = function(assert, done) {
-
-  const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
-    captchaSolver: captchaSolver
-  });
-
-  scraper.getAttribute("body", "href").then(function() {
-    assert.fail();
-  }, function() {
-    assert.ok(true);
-  });
-
-  scraper.run().then(function() {
-    scraper._tab.close();
-    done();
-  });
-};
-
-exports["test scraper should follow link "] = function(assert, done) {
-
-  const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
-    captchaSolver: captchaSolver
-  });
-
-  scraper.clickOn("a");
-
-  scraper.waitForLoading();
-
-  scraper.run().then(function() {
     assert.equal(scraper.url, self.data.url("./test-2.html"));
     scraper._tab.close();
     done();
@@ -128,68 +135,55 @@ exports["test scraper should follow link "] = function(assert, done) {
 };
 
 
-
-exports["test scraper should follow link "] = function(assert, done) {
+exports["test scraper should navigate to page 2"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
-  scraper.clickOn("a");
-  scraper.waitForLoading();
-  scraper.getText("#page");
+  scraper.goTo(self.data.url("./test-1.html"));
 
+  scraper.ifExists("#page", function() {
+    scraper.clickAndWait("a");
+  });
+  
   scraper.run().then(function() {
     assert.equal(scraper.url, self.data.url("./test-2.html"));
     scraper._tab.close();
     done();
   });
-};
-
-exports["test scraper should fail clicking"] = function(assert, done) {
-
-  const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
-    captchaSolver: captchaSolver
-  });
-
-  scraper.clickOn("#nothing");
-
-  scraper.run()
-    .catch(function(error) {
-      assert.ok(error);
-      scraper._tab.close();
-      done();
-    });
 };
 
 
 exports["test scraper should wait for element"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
+  scraper.goTo(self.data.url("./test-1.html"));
+
   scraper.waitForElement("#dynamic", 1000);
+  scraper.clickAndWait("#dynamic");
 
   scraper.run()
     .then(function() {
-      assert.ok(true);
+      assert.pass();
       scraper._tab.close();
       done();
     });
 };
 
-exports["test scraper should timeout waiting for element"] = function(assert, done) {
+exports["test scraper should fail after waiting for element"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
+  scraper.goTo(self.data.url("./test-1.html"));
+
   scraper.waitForElement("#nothing", 1000);
+  scraper.clickAndWait("#nothing");
 
   scraper.run()
     .catch(function(error) {
@@ -203,17 +197,18 @@ exports["test scraper should timeout waiting for element"] = function(assert, do
 exports["test scraper should fill in a value"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
+  scraper.goTo(self.data.url("./test-1.html"));
+
   scraper.fillIn("input[type=text]", "password");
 
-  scraper.getValue("input[type=text]").then(function(value) {
-    assert.equal("password", value);
-  });
+  scraper.getValue("input[type=text]");
 
-  scraper.run().then(function() {
+  scraper.run().then(function(results) {
+    assert.equal("password", results[0]);
+
     scraper._tab.close();
     done();
   });
@@ -223,15 +218,12 @@ exports["test scraper should fill in a value"] = function(assert, done) {
 exports["test scraper should fail filling in a value"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
-  scraper.fillIn("input[type=password]", "password");
+  scraper.goTo(self.data.url("./test-1.html"));
 
-  scraper.getValue("input[type=password]").then(function() {
-    assert.fail();
-  });
+  scraper.fillIn("input[type=password]", "password");
 
   scraper.run().catch(function(error) {
     assert.ok(error);
@@ -243,79 +235,99 @@ exports["test scraper should fail filling in a value"] = function(assert, done) 
 
 exports["test scraper should solve a captcha"] = function(assert, done) {
 
-  const captchaSolver = {
-    solveCaptcha: function() {
-      return new Promise(function(resolve) {
-        resolve("secret");
-      });
-    }
-  };
-
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
-  scraper.solveCaptcha("img", "input[type=text]").then(function(solution) {
-    assert.equal("secret", solution);
+  scraper.goTo(self.data.url("./test-1.html"));
 
-    scraper.getValue("input[type=text]").then(function(value) {
-      assert.equal("secret", value);
-    });
-  });
+  scraper.solveCaptcha("img", "input[type=text]");
 
-  scraper.run().then(function() {
+  scraper.getValue("input[type=text]");
+
+  scraper.run().then(function(results) {
+    assert.equal("secret", results[0]);
+
     scraper._tab.close();
     done();
   });
 };
 
-exports["test scraper should get text and then follow a link"] = function(assert, done) {
+
+exports["test scraper should check a checkbox"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
-  scraper.getText("#page").then(function(text){
-    assert.equal("1", text);
+  scraper.goTo(self.data.url("./test-1.html"));
 
-    scraper.clickOn("a");
-    scraper.waitForLoading();
+  scraper.check("input[type=checkbox]");
 
-    scraper.getText("#page").then(function(text) {
-      assert.equal("2", text);
-    });
-  });
+  scraper.getValue("input[type=checkbox]");
 
-  scraper.run().then(function() {
+  scraper.run().then(function(result) {
+    assert.equal("on", result[0]);
     scraper._tab.close();
     done();
   });
 };
 
-exports["test scraper should check for an element and catch the error"] = function(assert, done) {
 
-  var called = false;
+exports["test scraper should click link is url matches"] = function(assert, done) {
 
   const scraper = Scraper({
-    url: self.data.url("./test-1.html"),
     captchaSolver: captchaSolver
   });
 
-  scraper.expect("#nothing").catch(function(){
+  scraper.goTo(self.data.url("./test-1.html"));
 
-    scraper.getText("#page").then(function(text) {
-      assert.equal("1", text);
-      called = true;
-    });
+  scraper.ifURLIs(self.data.url("./test-1.html"),  function() {
+    scraper.clickAndWait("a");
   });
 
   scraper.run().then(function() {
-    assert.ok(called);
+    assert.equal(scraper.url, self.data.url("./test-2.html"));
     scraper._tab.close();
     done();
   });
 };
 
+exports["test scraper shouldn't click link"] = function(assert, done) {
+
+  const scraper = Scraper({
+    captchaSolver: captchaSolver
+  });
+
+  scraper.goTo(self.data.url("./test-1.html"));
+
+  scraper.ifURLIs("mozilla.com",  function() {
+    scraper.clickAndWait("a");
+  });
+
+  scraper.run().then(function() {
+    assert.equal(scraper.url, self.data.url("./test-1.html"));
+    scraper._tab.close();
+    done();
+  });
+};
+
+exports["test scraper should click link if url matches not"] = function(assert, done) {
+
+  const scraper = Scraper({
+    captchaSolver: captchaSolver
+  });
+
+  scraper.goTo(self.data.url("./test-1.html"));
+
+  scraper.ifURLIsNot(self.data.url("./test-2.html"),  function() {
+    scraper.clickAndWait("a");
+  });
+
+  scraper.run().then(function() {
+    assert.equal(scraper.url, self.data.url("./test-2.html"));
+    scraper._tab.close();
+    done();
+  });
+};
 require("sdk/test").run(exports);

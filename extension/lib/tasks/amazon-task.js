@@ -17,54 +17,50 @@ const amazonTask = Task({
   },
 
   resetPassword: function(scraper, email) {
+    scraper.ifExistsNot("#nav-flyout-ya-signin a", function() {
+      scraper.fail("Already logged in");
+    });
 
-    scraper.clickOn("#nav-flyout-ya-signin a")
-      .waitForLoading()
-      .expect("#ap_small_forgot_password_span a")
-      .catch(function() {
+    scraper.clickAndWait("#nav-flyout-ya-signin a");
+
+    scraper.ifExistsNot("#ap_small_forgot_password_span a", function() {
         //no password reset link, so there is a bot check
         scraper.solveCaptcha("form img", "input[type=text]");
-        scraper.clickOn("button[type=submit]");
-        scraper.waitForLoading();
-      })
-      .clickOn("#ap_small_forgot_password_span a")
-      .waitForLoading()
+        scraper.clickAndWait("button[type=submit]");
+      });
+      
+    scraper.clickAndWait("#ap_small_forgot_password_span a")
       .fillIn("#ap_email", email)
       .solveCaptcha("#ap_captcha_img > img", "#ap_captcha_guess")
-      .clickOn("#continue-input");
+      .clickAndWait("#continue-input");
   },
 
   setNewPassword: function(scraper, password) {
-    scraper.expect("input[name=password]")
-      .catch(function() {
+    scraper.ifExistsNot("input[name=password]", function() {
         //there is another bot check
         scraper.solveCaptcha("form img", "input[type=text]");
-        scraper.clickOn("button[type=submit]");
-        scraper.waitForLoading();
-      })
-      .fillIn("input[name=password]", password)
+        scraper.clickAndWait("button[type=submit]");
+      });
+      
+    scraper.fillIn("input[name=password]", password)
       .fillIn("input[name=passwordCheck]", password)
-      .clickOn("input[type=submit]");
+      .clickAndWait("input[type=submit]");
   },
 
   login: function(scraper, email, password) {
-    scraper.clickOn("#nav-flyout-ya-signin a")
-      .waitForLoading()
+    scraper.clickAndWait("#nav-flyout-ya-signin a")
       .fillIn("#ap_email", email)
       .check("#ap_signin_existing_radio")
       .fillIn("#ap_password", password)
-      .clickOn("#signInSubmit-input")
-      .waitForLoading().then(function(url) {
+      .clickAndWait("#signInSubmit-input");
 
-        if(url === "https://www.amazon.de/ap/signin") {
-          //amazon wants to see that we are no bot
-          scraper.fillIn("#ap_email", email)
-            .check("#ap_signin_existing_radio")
-            .fillIn("#ap_password", password)
-            .solveCaptcha("#ap_captcha_img > img", "#ap_captcha_guess")
-            .clickOn("#signInSubmit-input")
-            .waitForLoading();
-        }
+    scraper.ifExists("#ap_captcha_img", function() {
+        //amazon wants to see that we are no bot again
+        scraper.fillIn("#ap_email", email)
+          .check("#ap_signin_existing_radio")
+          .fillIn("#ap_password", password)
+          .solveCaptcha("#ap_captcha_img > img", "#ap_captcha_guess")
+          .clickAndWait("#signInSubmit-input");
       });
   }
 });

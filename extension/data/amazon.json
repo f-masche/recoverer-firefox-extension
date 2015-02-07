@@ -1,0 +1,69 @@
+"resetLinkPattern": "/https:\/\/www\\.amazon\\.de\/ap\/forgotpassword\\S+/",
+"loginUrlPattern": "/^https:\/\/www\\.amazon\\.de\/ap\/signin.*/",
+"loginUrl": "https://amazon.de",
+"emailFilters": {
+    "from": "konto-aktualisierung@amazon.de", 
+    "subject": "passworthilfe"
+},
+
+"resetPassword": {
+  "ifNotExists": {
+    "selector": "#nav-flyout-ya-signin a",
+    "then": {
+      "fail": { "message": "Already logged in"}
+    }
+  },
+  "clickAndWait": { "selector": "#nav-flyout-ya-signin a"},
+  "ifExists": {
+    "selector": "#ap_small_forgot_password_span a",
+    "then": {
+      "solveCapcha": {
+        "imgSelector": "form img", 
+        "inputSecector": "input[type=text]"
+      },
+      "clickAndWait" : { "selector": "button[type=submit]"}
+    }
+  },
+  "clickAndWait": { "selector": "#ap_small_forgot_password_span a"},
+  "fillIn": { "selector": "#ap_email", "type": "email"},
+  "solveCaptcha": {
+    "imgSelector": "#ap_captcha_img > img", 
+    "input": "#ap_captcha_guess"
+  },
+  "clickAndWait": { "selector": "#continue-input"}
+},
+
+"setNewPassword": {
+  "ifNotExists": {
+    "selector": "input[name=password]",
+    "then": {
+      "solveCaptcha": {
+        "imgSelector": "form img", 
+        "inputSecector": "input[type=text]"
+      },
+      "clickAndWait": { "selector": "button[type=submit]" }
+    }
+  },
+  "fillIn": {"selector": "input[name=password]", "type": "password"},
+  "fillIn": {"selector": "input[name=passwordCheck]", "type": "password"},
+  "clickAndWait": { "selector": "input[type=submit]" }
+},
+
+"login": {
+  "clickAndWait": {"selector": "#nav-flyout-ya-signin a"},
+  "fillIn": {"selector": "#ap_email", "type": "email"},
+  "check": {"selector": "#ap_signin_existing_radio"},
+  "fillIn": {"selector": "#ap_password", "type": "password"},
+  "clickAndWait": {"selector": "#signInSubmit-input"},
+  "ifUrlMatches": {
+    "pattern": "https://www.amazon.de/ap/signin",
+    "fillIn": {"selector": "#ap_email", "type": "email"},
+    "check": {"selector": "#ap_signin_existing_radio"},
+    "fillIn": {"selector": "#ap_password", "type": "password"},
+    "clickAndWait": {"selector": "#signInSubmit-input"},
+    "solveCaptcha": {
+      "imgSelector": "#ap_captcha_img > img", 
+      "inputSecector": "#ap_captcha_guess"
+    }
+  }
+}

@@ -15,24 +15,26 @@ const githubTask = Task({
     subject: "github reset password"
   },
 
-  resetPassword: function(scraper, catchaSolver, email) {
-    scraper.clickOn("#login label[for=password] a")
-      .waitForLoading()
+  resetPassword: function(scraper, email) {
+    scraper.ifExistsNot("#login", function() {
+      scraper.fail("Already logged in");
+    });
+      
+    scraper.clickAndWait("#login label[for=password] a")
       .fillIn("#email_field", email)
-      .clickOn("#forgot_password_form input[type=submit]");
+      .clickAndWait("#forgot_password_form input[type=submit]");
   },
 
   setNewPassword: function(scraper, password) {
     scraper.fillIn("#password", password)
       .fillIn("#password_confirmation", password)
-      .clickOn(".auth-form-body input[type=submit]");
+      .clickAndWait(".auth-form-body input[type=submit]");
   },
 
   login: function(scraper, email, password) {
     scraper.fillIn("#login_field", email)
       .fillIn("#password", password)
-      .clickOn("#login .auth-form-body input[type=submit]")
-      .waitForLoading();
+      .clickAndWait("#login .auth-form-body input[type=submit]");
   }
 });
 

@@ -18,18 +18,18 @@ exports["test task runner should call all methods of the tasks"] = function(asse
     emailFilters: mockFilters,
     login: function(scraper, email, password) {
       calledLogin = true;
-      assert.ok(scraper.clickOn, "Scraper exists");
+      assert.ok(scraper.goTo, "Scraper exists");
       assert.equal(email, userEmail,  "Email is correct");
       assert.ok(typeof password === "string" && password.length === 14, "Password exists");
     },
     resetPassword: function(scraper, email) {
       calledResetPassword = true;
-      assert.ok(scraper.clickOn, "Scraper exists");
+      assert.ok(scraper.goTo, "Scraper exists");
       assert.equal(email, userEmail,  "Email is correct");
     },
     setNewPassword: function(scraper, password) {
       calledSetNewPassword = true;
-      assert.ok(scraper.clickOn, "Scraper exists");
+      assert.ok(scraper.goTo, "Scraper exists");
       assert.ok(typeof password === "string" && password.length === 14, "Password exists");
     }
   });

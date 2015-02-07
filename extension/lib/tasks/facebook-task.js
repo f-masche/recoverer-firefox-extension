@@ -19,30 +19,25 @@ const facebookTask = Task({
 
   resetPassword: function(scraper, email) {
 
-    scraper.clickOn(".login_form_label_field > a");
+    scraper.clickAndWait(".login_form_label_field > a");
 
-    scraper.waitForLoading().then(function(url) {
+    scraper.ifURLIs(/https:\/\/www.facebook.com\/recover\/initiate/, function() {
+        //facebook cached our email
+        scraper.clickOn("a[href^='/notme.php']")
+          .waitForLoading();
+      });
 
-        if(url.match(/https:\/\/www.facebook.com\/recover\/initiate/)) {
-          //facebook cached our email
-          scraper.clickOn("a[href^='/notme.php']")
-            .waitForLoading();
-        }
-
-        scraper.fillIn("#identify_yourself_flow input[type=text]", email)
-          .clickOn("#identify_yourself_flow input[name=did_submit]")
-          .waitForLoading()
-          .check("input[type=radio][value=send_email]")
-          .clickOn("input[type=submit][name=reset_action]");
+    scraper.fillIn("#identify_yourself_flow input[type=text]", email)
+      .clickAndWait("#identify_yourself_flow input[name=did_submit]")
+      .check("input[type=radio][value=send_email]")
+      .clickAndWait("input[type=submit][name=reset_action]");
           
-        scraper.waitForElement("#captcha", 5000).then(function() {
-          //facebook wants a captcha
-          scraper.solveCaptcha("#captcha img", "#captcha_response")
-            .clickOn("#captcha_dialog_submit_button"); 
-        }, function() {
-          //no error
-          return Promise.resolve();
-        });
+    scraper.waitForElement("#captcha", 2000);
+
+    scraper.ifExists("#captcha", function() {
+        //facebook wants a captcha
+        scraper.solveCaptcha("#captcha img", "#captcha_response")
+          .clickAndWait("#captcha_dialog_submit_button"); 
       });
   },
 
@@ -50,15 +45,14 @@ const facebookTask = Task({
     scraper.fillIn("input[name=password_new]", password)
       .fillIn("input[name=password_confirm]", password)
       .check("input[type=radio][value=keep_sessions]")
-      .clickOn("input[name=btn_continue]");
+      .clickAndWait("input[name=btn_continue]");
   },
 
-  login: function(scraper, email, password) {   // jshint ignore:line
-    //already logged in after password reset
-    scraper.fillIn("#login_form input[name=email]", email)
-      .fillIn("#login_form input[name=pass]", password)
-      .clickOn("#login_form input[type=submit]")
-      .waitForLoading();
+  login: function(scraper, email, password) { //jshint ignore:line
+    //already logged in
+    //scraper.fillIn("#login_form input[name=email]", email)
+    //  .fillIn("#login_form input[name=pass]", password)
+    //  .clickAndWait("#login_form input[type=submit]");
   }
 });
 

@@ -126,7 +126,7 @@ const TaskRunner = Class({
     return this._scraper.run().then(function() {
       self.loginTab.url = self._scraper.url;
       self._setStatus(EVENTS.loggedIn);
-      
+      self._scraper.destroy();
       return Promise.resolve();
     });
   },

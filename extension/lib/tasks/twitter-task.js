@@ -18,20 +18,17 @@ const twitterTask = Task({
   },
 
   resetPassword: function(scraper, email) {
-    scraper.clickOn("a.forgot")
-      .waitForLoading()
+    scraper.clickAndWait("a.forgot")
       .fillIn("input[name=account_identifier]", email)
-      .clickOn("input[type=submit]")
-      .waitForLoading()
+      .clickAndWait("input[type=submit]")
       .check("input[value=email] + input[type=radio]")
-      .clickOn("input[type=submit]");
+      .clickAndWait("input[type=submit]");
   },
 
   setNewPassword: function(scraper, password) {
     scraper.fillIn("input[name=password]", password)
       .fillIn("input[name=password_confirmation]", password)
-      .clickOn("input[type=submit]")
-      .waitForLoading();
+      .clickAndWait("input[type=submit]");
   },
 
   login: function(scraper, email, password) {   // jshint ignore:line
