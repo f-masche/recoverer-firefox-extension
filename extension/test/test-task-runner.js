@@ -1,5 +1,6 @@
 const { TaskRunner } = require("task-runner");
 const { Task } = require("tasks/task");
+const { Class } = require("sdk/core/heritage");
 
 
 exports["test task runner should call all methods of the tasks"] = function(assert, done) {
@@ -10,7 +11,11 @@ exports["test task runner should call all methods of the tasks"] = function(asse
   var calledResetPassword  = false;
   var calledSetNewPassword = false;
 
-  const task = Task({
+  const MockTask = Class({
+    extends: Task,
+    initialize: function() {
+      Task.prototype.initialize.call(this);
+    },
     name: "mock",
     loginUrlPattern: /.*/,
     loginUrl: "about:blank",
@@ -50,7 +55,7 @@ exports["test task runner should call all methods of the tasks"] = function(asse
 
   const taskRunner = TaskRunner({
     userEmail: userEmail,
-    task: task,
+    task: MockTask(),
     loginTab: {
       url: null
     },
