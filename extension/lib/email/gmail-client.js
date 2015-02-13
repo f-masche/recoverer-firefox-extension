@@ -16,7 +16,7 @@ const OAUTH_URL = "https://accounts.google.com/o/oauth2/auth";
 /**
 * The client id of this application
 */
-const CLIENT_ID = "161657375993-g2mk0thgpndek0jvqlm84gf0ie38qpbc.apps.googleusercontent.com";
+const CLIENT_ID = "508877147224-p181a50jcumcjtkq8pjodcoovppcnth8.apps.googleusercontent.com";
 
 /**
 * The scope of this application needs.
