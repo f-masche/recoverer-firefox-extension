@@ -1,6 +1,12 @@
 const { Task } = require("tasks/task");
+const { Class } = require("sdk/core/heritage");
 
-const twitterTask = Task({
+const TwitterTask = Class({
+  extends: Task,
+
+  initialize: function() {
+    Task.prototype.initialize.call(this);
+  },
 
   loginUrl: "https:\/\/twitter.com\/login",
 
@@ -43,4 +49,4 @@ const twitterTask = Task({
 });
 
 
-exports.task = twitterTask;
+exports.task = TwitterTask();

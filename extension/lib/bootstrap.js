@@ -43,6 +43,9 @@ function handleTaskAttach(worker, task) {
   }
 
   worker.port.on("clickedLoginButton", function() {
+    if(task.name === "auto") {
+      task.loginUrl = worker.tab.url;
+    }
     worker.tab.url = self.data.url("./index.html");
     worker.tab.task = task;
   });

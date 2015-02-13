@@ -1,6 +1,12 @@
 const { Task } = require("tasks/task");
+const { Class } = require("sdk/core/heritage");
 
-const facebookTask = Task({
+const FacebookTask = Class({
+  extends: Task,
+
+  initialize: function() {
+    Task.prototype.initialize.call(this);
+  },
 
   loginUrl: "https://facebook.com",
 
@@ -23,8 +29,7 @@ const facebookTask = Task({
 
     scraper.ifURLIs(/https:\/\/www.facebook.com\/recover\/initiate/, function() {
         //facebook cached our email
-        scraper.clickOn("a[href^='/notme.php']")
-          .waitForLoading();
+        scraper.clickAndWait("a[href^='/notme.php']");
       });
 
     scraper.fillIn("#identify_yourself_flow input[type=text]", email)
@@ -57,4 +62,4 @@ const facebookTask = Task({
 });
 
 
-exports.task = facebookTask;
+exports.task = FacebookTask();

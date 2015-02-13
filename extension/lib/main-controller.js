@@ -28,7 +28,6 @@ const MainController = Class({
 
     worker.on("detach", function () {
       console.log(TAG, "detach");
-      // cleanup
       self.taskRunner = null;
     });
 

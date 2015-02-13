@@ -29,21 +29,25 @@ const EVENTS = {
 * @param {String} value The new value of the field
 */
 self.port.on(EVENTS.fillIn, function(selector, value) {
-  var element = document.querySelector(selector);
+  var elements = document.querySelectorAll(selector);
 
-  if(element) {
-     var type = element.getAttribute("type");
-    if(type === "checkbox" || type === "radio") {
-      element.checked = !!value;
-    } else {
-      element.value = value;
-    } 
+  if(elements.length) {
+    for(let i = 0;  i < elements.length; i++) {
+      const element = elements[i];
 
-    //fake a change event
-    //needed to trigger client side scripts, e.g. form validation
-    const fakeChangeEvent = new Event("change");
-    fakeChangeEvent.target = element;
-    element.dispatchEvent(fakeChangeEvent);
+      var type = element.getAttribute("type");
+      if(type === "checkbox" || type === "radio") {
+        element.checked = !!value;
+      } else {
+        element.value = value;
+      } 
+
+      //fake a change event
+      //needed to trigger client side scripts, e.g. form validation
+      const fakeChangeEvent = new Event("change");
+      fakeChangeEvent.target = element;
+      element.dispatchEvent(fakeChangeEvent);
+    }
 
     self.port.emit(EVENTS.filledIn);
   } else {

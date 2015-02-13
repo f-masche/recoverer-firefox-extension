@@ -1,6 +1,12 @@
 const { Task } = require("tasks/task");
+const { Class } = require("sdk/core/heritage");
 
-const githubTask = Task({
+const GithubTask = Class({
+  extends: Task,
+
+  initialize: function() {
+    Task.prototype.initialize.call(this);
+  },
 
   loginUrl: "https://www.github.com/login",
 
@@ -39,4 +45,4 @@ const githubTask = Task({
 });
 
 
-exports.task = githubTask;
+exports.task = GithubTask();

@@ -1,6 +1,12 @@
 const { Task } = require("tasks/task");
+const { Class } = require("sdk/core/heritage");
 
-const amazonTask = Task({
+const AmazonTask = Class({
+  extends: Task,
+
+  initialize: function() {
+    Task.prototype.initialize.call(this);
+  },
 
   //start on main page cause of complicated sign in url
   loginUrl: "http://www.amazon.de/",
@@ -65,4 +71,4 @@ const amazonTask = Task({
   }
 });
 
-exports.task = amazonTask;
+exports.task = AmazonTask();

@@ -398,6 +398,8 @@ const GetAttribute = Class({
   handler: function(scraper, success, failure) {
     console.log(TAG, "Getting attribute " + this.attribute + " on " + this.selector);
 
+    const self = this;
+
     scraper._worker.port.emit("getAttribute", this.selector, this.attribute);
 
     scraper._worker.port.once("gotAttribute", function(value, error) {
@@ -476,6 +478,8 @@ const WaitForElement = Class({
 
   extends: Operation,
 
+  maxTime: 2000,
+
   /**
   * @param {String} selector
   *   The selector for the element to wait for
@@ -488,11 +492,10 @@ const WaitForElement = Class({
   handler: function(scraper, success) {
     console.log(TAG, "Waiting for element " + this.selector);
 
-    const time = 2000;
-
+    const self = this;
     var timeoutId = -1;
 
-    scraper._worker.port.emit("waitForElement", this.selector, time);
+    scraper._worker.port.emit("waitForElement", this.selector, this.maxTime);
 
     const handler = function() {
       console.log(TAG, "Waited for element " + this.selector);
@@ -506,15 +509,15 @@ const WaitForElement = Class({
     //the content script could be unloaded so the event never gets fired
     timeoutId = setTimeout(function() {
       scraper._worker.port.off("waitedForElement", handler);
-      console.log(TAG, "Waited for element " + this.selector);
+      console.log(TAG, "Waited for element " + self.selector);
       success();
-    }, time * 1.5);
+    }, this.maxTime * 1.5);
   }
 });
 
 
 /**
-* Lete the scraper fail with a given reason.
+* Lets the scraper fail with a given reason.
 */
 const Fail = Class({
   extends: Operation,
@@ -532,6 +535,28 @@ const Fail = Class({
   }
 });
 
+
+/**
+* Runs a callback after the previous operation.
+*/
+const Then = Class({
+  extends: Operation,
+
+  /**
+  * @param {Function} callback
+  *   A callback function
+  */
+  initialize: function(callback) {
+    this.callback = callback;
+    this.name = "then";
+  },
+  handler: function(scraper, success) {
+    if(typeof this.callback === "function") {
+      this.callback(scraper.results);
+    }
+    success();
+  }
+});
 
 
 const scraperContract = contract({
@@ -572,6 +597,16 @@ const Scraper =  Class({
     return this;
   },
 
+  /**
+  * @see Then
+  *
+  * @return {Scraper} 
+  *   This scraper
+  */
+  then: function(callback) {
+    this._addOperation(Then(callback));
+    return this;
+  },
 
   /**
   * @see IfExists
@@ -618,7 +653,7 @@ const Scraper =  Class({
   },
 
   /**
-  * @see WaitForLoadingAction
+  * @see WaitForLoading
   *
   * @return {Scraper} 
   *   This scraper
@@ -629,7 +664,7 @@ const Scraper =  Class({
   },
 
   /**
-  * @see WaitForElementAction
+  * @see WaitForElement
   *
   * @return {Scraper} 
   *   This scraper
@@ -640,7 +675,7 @@ const Scraper =  Class({
   },
 
   /**
-  * @see FillInAction
+  * @see FillIn
   *
   * @return {Scraper} 
   *   This scraper
@@ -660,7 +695,7 @@ const Scraper =  Class({
     return this.fillIn(selector, true);
   },
   /**
-  * @see ClickOnAction
+  * @see ClickOn
   *
   * @return {Scraper} 
   *   This scraper
@@ -671,7 +706,7 @@ const Scraper =  Class({
     return this;
   },
   /**
-  * @see SolveCaptchaAction
+  * @see SolveCaptcha
   *
   * @return {Scraper} 
   *   This scraper
@@ -682,7 +717,7 @@ const Scraper =  Class({
   },
 
   /**
-  * @see GetTextAction
+  * @see GetText
   *
   * @return {Scraper}
   *   This scraper
@@ -693,7 +728,7 @@ const Scraper =  Class({
   },
 
   /**
-  * @see GetValueAction
+  * @see GetValue
   *
   * @return {Scraper} 
   *   This scraper
@@ -704,7 +739,7 @@ const Scraper =  Class({
   },
 
   /**
-  * @see GetAttributeAction
+  * @see GetAttribute
   *
   * @return {Scraper} 
   *   This scraper
@@ -785,12 +820,10 @@ const Scraper =  Class({
   destroy: function() {
     if(this._tab) {
       this._tab.close();
-      this._tab = null;
     }
 
     if(this._worker) {
       this._worker.detach();
-      this._worker = null; 
     }
 
     this._stack = [];

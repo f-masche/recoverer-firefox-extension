@@ -13,6 +13,7 @@ recoverer.controller("AppController", function($scope, port) {
 
   port.on("setTasks", function(tasks) {
     $scope.tasks = tasks;
+    console.log(tasks);
   });
 
   port.on("setTask", function(task) {

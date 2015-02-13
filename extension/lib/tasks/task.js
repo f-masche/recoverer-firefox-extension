@@ -1,6 +1,5 @@
 const { Class } = require("sdk/core/heritage");
 const { contract } = require("sdk/util/contract");
-const { merge } = require("sdk/util/object");
 
 const taskContract = contract({
   loginUrl: {
@@ -37,15 +36,23 @@ const taskContract = contract({
 * This is an abstract class for a task.
 */
 const Task = Class({
-  initialize: function(options) {
-    //validate options
-    taskContract(options);
-
-    merge(this, options);
+  initialize: function() {
+    //validate implementation
+    taskContract(this);
     console.log("Tasks: new task: " + this.name);
   },
 
-
+  toJSON: function() {
+    return {
+      loginUrl: this.loginUrl,
+      loginUrlPattern: this.loginUrlPattern,
+      loginUrlSelector: this.loginUrlSelector,
+      resetLinkPattern: this.resetLinkPattern,
+      emailFilters: this.emailFilters,
+      name: this.name
+    };
+  },
+  
 /* jshint ignore:start */
 
   resetPassword: function(scraper, email) {
