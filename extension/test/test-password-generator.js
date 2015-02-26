@@ -14,29 +14,12 @@ exports["test password should generate different passwords"] = function(assert) 
 };
 
 exports["test password should convert bytes to ASCII"] = function(assert) {
-  const asciiBytes = [];
+  const alphabet = "abcde";
+  const bytes = [0,2,1,4,3];
 
-  for(let i = 33; i <= 126; i++) {
-    asciiBytes.push(i);
-  }
+  const string = passwordGenerator.bytesToASCII(bytes, alphabet);
 
-  const shiftedAsciiBytes = [];
-
-  for(let i = 0; i < asciiBytes.length; i++) {
-    shiftedAsciiBytes[i] = asciiBytes[i] + 94 * Math.round(Math.random() * 10);
-  }
-
-  const string = passwordGenerator.bytesToASCII(shiftedAsciiBytes);
-
-  var equal = true;
-
-  for(let i = 0; i < asciiBytes.length; i++) {
-    if(string.charCodeAt(i) !== asciiBytes[i]) {
-      equal = false;
-    }
-  }
-
-  assert.ok(equal);
+  assert.equal("acbed", string, "generated string is correct");
 };
 
 require("sdk/test").run(exports);

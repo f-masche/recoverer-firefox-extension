@@ -49,4 +49,4 @@ const TwitterTask = Class({
 });
 
 
-exports.task = TwitterTask();
+exports.task = TwitterTask;

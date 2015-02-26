@@ -62,4 +62,4 @@ const FacebookTask = Class({
 });
 
 
-exports.task = FacebookTask();
+exports.task = FacebookTask;

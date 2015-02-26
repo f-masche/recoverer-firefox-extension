@@ -71,4 +71,4 @@ const AmazonTask = Class({
   }
 });
 
-exports.task = AmazonTask();
+exports.task = AmazonTask;

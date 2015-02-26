@@ -59,8 +59,8 @@ module.exports = function(grunt) {
           update: true
         },
         files: {        
-          "extension/data/content.css": "extension/sass/content.scss",     
-          "extension/data/style.css": "extension/sass/main.scss"
+          "extension/data/css/content.css": "extension/sass/content.scss",     
+          "extension/data/css/style.css": "extension/sass/main.scss"
         }
       }
     },

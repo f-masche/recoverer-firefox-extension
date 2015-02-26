@@ -59,7 +59,6 @@ function getToken(userId) {
     const redirectUrlPattern = new RegExp("^" + REDIRECT_URI);
 
     const redirectUrlListener = function(event) {
-      //subject.QueryInterface(Ci.nsIHttpChannel);
 
       const subject = event.subject.QueryInterface(Ci.nsIHttpChannel);
       const url = subject.URI.spec;

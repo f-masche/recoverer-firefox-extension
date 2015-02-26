@@ -64,7 +64,7 @@ const Init = Class({
       console.log(TAG, "on " + tab.url);
       scraper.url = tab.url;
       scraper._worker = tab.attach({
-        contentScriptFile: ["./scraper.js"]
+        contentScriptFile: ["./js/scraper.js"]
       });
     });
 

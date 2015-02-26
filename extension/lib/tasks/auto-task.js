@@ -141,4 +141,4 @@ const AutoTask = Class({
   }
 });
 
-exports.task = AutoTask();
+exports.task = AutoTask;

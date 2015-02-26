@@ -8,26 +8,35 @@
 const { Cu } = require("chrome");
 Cu.import("resource://gre/modules/Services.jsm");
 
-const PASSWORD_LENGTH = 14;
+const DEFAULT_LENGTH = 14;
 
-const ASCII_START = 33;
-
-const ASCII_END = 127;
+const LETTERS = ["abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+const DIGITS = ["1234567890"];
+const SPECIAL = ["!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"];
 
 
 /**
 * Generates a new password.
 *
+* @param {int} length
+*   Optional length of the password. Default is 14.
+*   Must be between 1 and 128.
+*
 * @return {String}
 *   A password
 */
-function generatePassword() {
+function generatePassword(length) {
+  if(length && length > 128 || length < 1) {
+    throw new Error("Invalid password length: " + length);
+  }
+
+  const passwordLength = length || DEFAULT_LENGTH;
   const window = Services.appShell.hiddenDOMWindow;
-  const bytes = new Uint8Array(PASSWORD_LENGTH);
+  const bytes = new Uint8Array(passwordLength);
 
   window.crypto.getRandomValues(bytes);
 
-  const password = bytesToASCII(bytes);
+  const password = bytesToASCII(bytes, LETTERS + DIGITS + SPECIAL);
   
   return password;
 }
@@ -37,19 +46,19 @@ function generatePassword() {
 *
 * @param {Array} bytes
 *   An Array of bytes
+*
+* @param {String}
+*   An alphabet that should be used for the conversion.
+*
 * @return {String}
 *   The converted ASCII string
 */
-function bytesToASCII(bytes) {
+function bytesToASCII(bytes, alphabet) {
   var string = "";
 
-  const interval = ASCII_END - ASCII_START;
-
   for(var i = 0; i < bytes.length; i++) {
-    const k = Math.floor((bytes[i] - ASCII_START) / interval);
-    const m = bytes[i] - ASCII_START - k * interval;
-    const charCode = ASCII_START + m;
-    string += String.fromCharCode(charCode);
+    const k = bytes[i] % alphabet.length;
+    string += alphabet[k];
   }
 
   return string;

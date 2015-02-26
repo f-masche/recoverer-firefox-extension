@@ -45,4 +45,4 @@ const GithubTask = Class({
 });
 
 
-exports.task = GithubTask();
+exports.task = GithubTask;
