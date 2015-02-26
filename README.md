@@ -12,6 +12,7 @@ Uses the GMail-API, so only GMail-Accounts are supported at the moment.
 - amazon.de
 - facebook.com
 - github.com
+- twitter.com
 
 ## Build
 
@@ -29,6 +30,8 @@ This project uses Grunt to build the plugin.
   `npm install`
 - Add the paths of your firefox binary and profile to the config.json 
 
+
 ### Build the plugin
 To build the plugin simply run `grunt build`, which will create a build folder with the xpi file.
 You can run the unit tests via `grunt test`.
+To run the extension just use `grunt`
