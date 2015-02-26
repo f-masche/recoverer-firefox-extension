@@ -6,7 +6,8 @@
 const EVENTS = {
   showPopup: "showPopup",
   elementExists: "elementExists",
-  clickedLoginButton: "clickedLoginButton"
+  clickedLoginButton: "clickedLoginButton",
+  clickedCloseButton: "clickedCloseButton"
 };
 
 /**
@@ -49,6 +50,8 @@ function showPopup() {
 
   closeButton.addEventListener("click", function() {
     popup.classList.add("recoverer-popup-hidden");
+
+    self.port.emit(EVENTS.clickedCloseButton);
 
     window.setTimeout(function() {
       document.body.removeChild(popup);
