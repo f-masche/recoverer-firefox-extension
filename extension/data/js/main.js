@@ -1,9 +1,11 @@
+/* global angular */
+
 /*
 * This is the content script for the extensions main page.
 */
 
 
-const recoverer = angular.module("Recoverer", []); //jshint ignore:line
+const recoverer = angular.module("Recoverer", []);
 
 
 /**
@@ -13,7 +15,6 @@ recoverer.controller("AppController", function($scope, port) {
 
   port.on("setTasks", function(tasks) {
     $scope.tasks = tasks;
-    console.log(tasks);
   });
 
   port.on("setTask", function(task) {

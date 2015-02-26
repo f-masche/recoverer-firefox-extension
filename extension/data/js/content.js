@@ -1,6 +1,6 @@
 /*
-* This content script displays a popover on a login page,
-* to let the user sign in with recoverer.
+* This content script displays a popover on the page,
+* to let the user sign in with the extension.
 */
 
 const EVENTS = {
@@ -11,24 +11,9 @@ const EVENTS = {
 };
 
 /**
-* Shows the popup
-*/
-self.port.on(EVENTS.showPopup, showPopup);
-
-/**
-* Checks if an element exists on the current page.
-* @param {String} selector The CSS selector for the element.
-*/
-self.port.on(EVENTS.elementExists, function(selector) {
-  const elementExists = document.querySelector(selector) !== null;
-  self.port.emit(EVENTS.elementExists, elementExists);
-});
-
-
-/**
 * Creates and displays the popup.
 */
-function showPopup() {
+const showPopup = function() {
   const popup = document.createElement("div");
   popup.className = "recoverer-popup recoverer-popup-hidden";
 
@@ -67,4 +52,19 @@ function showPopup() {
   window.setTimeout(function() {
     popup.classList.remove("recoverer-popup-hidden");
   }, 500);
-}
+};
+
+
+/**
+* Shows the popup
+*/
+self.port.on(EVENTS.showPopup, showPopup);
+
+/**
+* Checks if an element exists on the current page.
+* @param {String} selector The CSS selector for the element.
+*/
+self.port.on(EVENTS.elementExists, function(selector) {
+  const elementExists = document.querySelector(selector) !== null;
+  self.port.emit(EVENTS.elementExists, elementExists);
+});

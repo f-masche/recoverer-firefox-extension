@@ -6,7 +6,7 @@
 const { Class } = require("sdk/core/heritage");
 const { TaskRunner } = require("task-runner");
 const { GmailEmailSource } = require("email/gmail-email-source");
-const { UserCaptchaSolver } = require("util/user-captcha-solver");
+const { UserCaptchaSolver } = require("captcha/user-captcha-solver");
 const tasks = require("tasks");
 
 const TAG = "main controller: ";

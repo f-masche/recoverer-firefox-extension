@@ -1,4 +1,4 @@
-const { UserCaptchaSolver } = require("util/user-captcha-solver");
+const { UserCaptchaSolver } = require("captcha/user-captcha-solver");
 const { setTimeout } = require("sdk/timers");
 
 exports["test user captcha solver should solve the captcha"] = function(assert, done) {
