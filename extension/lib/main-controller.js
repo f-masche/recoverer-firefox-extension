@@ -44,13 +44,10 @@ const MainController = Class({
   * @param {String} email
   *   Email of the user.
   */
-  onRunTask: function(taskName, email) {
-    const task = tasks.getTaskForName(taskName);
-    this.runTask(task, email);
-  },
-
-  runTask: function(task, userEmail) {
+  onRunTask: function(taskName, userEmail) {
     const self = this;
+
+    const task = tasks.getTaskForName(taskName);
 
     this.taskRunner = TaskRunner({
       task: task, 
