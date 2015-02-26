@@ -1,4 +1,4 @@
-/**
+/*
 * This modules purpose is to load and organize the tasks.
 */
 
@@ -21,7 +21,7 @@ const TAG = "tasks:";
 *   Array of task names
 */
 const getTaskNames = function() {
-  return tasks.map(t => t.prototype.name);
+  return tasks.map(t => t.task.prototype.name);
 };
 
 
@@ -34,7 +34,7 @@ const getTaskNames = function() {
 *   A Task
 */
 const getTaskForName = function(name) {
-  const task = tasks.find((t) => t.prototype.name === name);
+  const task = tasks.find(t => t.task.prototype.name === name);
 
   if(!task) {
     throw new Error(TAG, "Could not find task with name " + name);
