@@ -19,7 +19,7 @@ const pageMods = [];
 
 //register a page mod for each task
 tasks.getTaskNames().forEach(function(name) {
-  console.log(TAG, "Registering page mod for " + task.name + " " + task.loginUrlPattern);
+  console.log(TAG, "Registering page mod for " + name);
 
   const task = tasks.getTaskForName(name);
 

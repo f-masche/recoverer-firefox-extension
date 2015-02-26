@@ -38,7 +38,7 @@ const TwitterTask = Class({
   },
 
   login: function(scraper, email, password) {   // jshint ignore:line
-
+    scraper.goTo("https://twitter.com");
     //already logged in
 
     // scraper.fillIn("input[name='session[username_or_email]']", email)

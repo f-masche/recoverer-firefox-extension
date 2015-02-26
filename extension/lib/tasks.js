@@ -7,8 +7,7 @@ const tasks = [
   require("tasks/github-task"),
   require("tasks/amazon-task"),
   require("tasks/facebook-task"),
-  require("tasks/twitter-task"),
-  require("tasks/auto-task")
+  require("tasks/twitter-task")
 ];
 
 const TAG = "tasks:";
@@ -42,8 +41,20 @@ const getTaskForName = function(name) {
   return task.task();
 };
 
+/**
+* Returns all tasks
+*
+* @return {Array}
+*   Array of tasks
+*/
+const getTasks = function() {
+  return tasks.map(t => t.task());
+};
+
 
 exports.getTaskNames = getTaskNames;
 
 exports.getTaskForName = getTaskForName;
+
+exports.getTasks = getTasks;
 

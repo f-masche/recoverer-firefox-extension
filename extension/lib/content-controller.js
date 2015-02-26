@@ -21,12 +21,12 @@ const ContentController = Class({
   */
   initialize: function(worker, taskName) {
     this.worker = worker;
-    const task = tasks.getTaskForName(taskName);
+    this.task = tasks.getTaskForName(taskName);
 
-    if(task.loginUrlSelector) {
-      console.log(TAG, "Checking for selector " + task.loginUrlSelector);
+    if(this.task.loginUrlSelector) {
+      console.log(TAG, "Checking for selector " + this.task.loginUrlSelector);
 
-      worker.port.emit("elementExists", task.loginUrlSelector);
+      worker.port.emit("elementExists", this.task.loginUrlSelector);
 
       worker.port.once("elementExists", function(exists) {
         if(exists) {

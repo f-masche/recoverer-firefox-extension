@@ -3,6 +3,7 @@
 */
 
 $brand-primary: #0084FF;
+$images-dir: "../images/";
 
 @import "bootstrap-3.3.2/bootstrap";
 
@@ -18,7 +19,7 @@ $brand-primary: #0084FF;
 }
 
 .spinner {
-  $spinner-img: "spiffygif_38x38.gif";
+  $spinner-img: $images-dir + "spiffygif_38x38.gif";
   $spinner-size: 38px;
 
   display: block;

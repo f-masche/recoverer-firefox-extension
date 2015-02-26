@@ -199,7 +199,7 @@ const GmailClient = Class({
 
   initialize: function(userId) {
     this.userId = userId;
-    this.oauthToken = "";
+    this._oauthToken = "";
   },
 
   listMessages: function(filters) {
@@ -285,7 +285,7 @@ const GmailClient = Class({
 
   _authenticate: function() {
     if(this._oauthToken) {
-      return Promise.resolve(this.oauthToken);
+      return Promise.resolve(this._oauthToken);
     } else {
       const self = this;
 

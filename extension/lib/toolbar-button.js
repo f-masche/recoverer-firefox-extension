@@ -14,9 +14,9 @@ const button = ActionButton({
   id: "open-recoverer",
   label: "Open Recoverer",
   icon: {
-    "16": "./favicon-active.ico",
-    "32": "./favicon-active.ico",
-    "64": "./favicon-active.ico"
+    "16": "./favicon.ico",
+    "32": "./favicon.ico",
+    "64": "./favicon.ico"
   },
   onClick: handleToolbarButtonClick
 });

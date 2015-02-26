@@ -8,7 +8,7 @@ const UserCaptchaSolver = Class({
 
   /**
   * @param {Worker} worker
-  *   Worker connected to the main content script.
+  *   Worker connected to the `main.js` content script.
   */
   initialize: function(worker) {
     this._worker = worker;
