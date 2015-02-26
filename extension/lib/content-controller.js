@@ -1,9 +1,24 @@
+/*
+* This module exports a controller that handles the popup on the login pages.
+* It depends on the `content.js` content script file.
+*/
+
 const { Class } = require("sdk/core/heritage");
 const tasks = require("tasks");
 
 const TAG = "content controller";
 
 const ContentController = Class({
+
+  /**
+  * Creates a new ContentController.
+  *
+  * @param {Worker} worker
+  *   Worker attached to the `content.js` content script file.
+  *
+  * @param {String} taskName
+  *   Name of the active task.
+  */
   initialize: function(worker, taskName) {
     this.worker = worker;
     const task = tasks.getTaskForName(taskName);
@@ -26,18 +41,28 @@ const ContentController = Class({
       worker.port.emit("showPopup");
     }
 
-    worker.port.on("clickedLoginButton", function() {
-      if(task.name === "auto") {
-        task.loginUrl = worker.tab.url;
-      }
-      worker.tab.url = self.data.url("./index.html");
-      worker.tab.task = task;
-      worker.detach();
-    });
+    worker.port.once("clickedLoginButton", this.onClickedLoginButton.bind(this));
 
-    worker.port.on("clickedCloseButton", function() {
-      worker.detach();
-    });
+    worker.port.once("clickedCloseButton", this.onClickedCloseButton.bind(this));
+  },
+
+  /**
+  * Called when the login button has been clicked.
+  */
+  onClickedLoginButton: function() {
+    if(this.task.name === "auto") {
+      this.task.loginUrl = this.worker.tab.url;
+    }
+    this.worker.tab.url = self.data.url("./index.html");
+    this.worker.tab.task = this.task;
+    this.worker.detach(); 
+  },
+
+  /**
+  * Called when the close button has been clicked.
+  */
+  onClickedCloseButton: function() {
+    this.worker.detach();
   }
 });
 

@@ -1,3 +1,8 @@
+/**
+* This module provides a more generic wrapper for the gmail client.
+* Allows to wait for a specific email and mark it as read.
+*/ 
+
 const { setTimeout } = require("sdk/timers");
 const { Class } = require("sdk/core/heritage");
 const { GmailClient } = require("email/gmail-client");
@@ -16,6 +21,18 @@ const GmailEmailSource = Class({
     this._gmailClient = GmailClient(userId);
   },
 
+
+  /*
+  * Waits a certain time for an email.
+  * 
+  * @param {Object} filters
+  *   Filters to find the email.
+  *   Equivalent to the GMail-API filters.
+  *
+  * @return {Promise}
+  *   A promise that gets resolved with the email.
+  *   Gets rejected if timed out.
+  */
   waitForEmail: function(filters) {      
     const self = this;
     var times = 0;
@@ -44,6 +61,12 @@ const GmailEmailSource = Class({
       });
   },
 
+
+  /**
+  * Marks an email as read.
+  *   @param {String} id
+  *     Id of the email
+  */
   setEmailAsRead: function(id) {
     return this._gmailClient.modifyMessage(id, null, ["UNREAD"]);
   }

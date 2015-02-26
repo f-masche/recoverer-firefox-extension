@@ -1,7 +1,7 @@
-/**
-* This service attaches the tasks to their respective webpages.
+/*
+* This service attaches the tasks to their respective webpage.
 * The main purpose is to add the content script `content.js` to the page specified by the task.
-* It also handles the content scripts for the extensions main page.
+* It also attaches the content scripts for the extensions main page.
 */
 
 require("toolbar-button");

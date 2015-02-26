@@ -1,3 +1,8 @@
+/*
+* This module exports the controller for the extensions main page.
+* It is attached to the `main.js content script`.
+*/
+
 const { Class } = require("sdk/core/heritage");
 const { TaskRunner } = require("task-runner");
 const { GmailEmailSource } = require("email/gmail-email-source");
@@ -7,31 +12,41 @@ const tasks = require("tasks");
 const TAG = "main controller: ";
 
 
-
 const MainController = Class({
 
+  /**
+  * Creates a new MainController.
+  * 
+  * @param {Worker} worker
+  *   A worker attached to the `main.js` content script.
+  */
   initialize: function(worker) {
-    const self = this;
-
     this.worker = worker;
 
     this.worker.port.emit("setTasks", tasks.getTasks());
 
-    this.worker.port.on("runTask", function(taskName, email) {
-      const task = tasks.getTaskForName(taskName);
-      self.runTask(task, email);
-    });
+    this.worker.port.on("runTask", this.onRunTask.bind(this));
 
     if(this.worker.tab.task) {
       this.worker.port.emit("setTask", this.worker.tab.task);
     }
 
-    worker.on("detach", function () {
-      console.log(TAG, "detach");
-      self.taskRunner = null;
-    });
-
     console.log(TAG, "new controller");
+  },
+
+  /**
+  * Handler for the runTask message.
+  * Starts a task.
+  * 
+  * @param {String} taskName
+  *   Name of the task to run.
+  *
+  * @param {String} email
+  *   Email of the user.
+  */
+  onRunTask: function(taskName, email) {
+    const task = tasks.getTaskForName(taskName);
+    this.runTask(task, email);
   },
 
   runTask: function(task, userEmail) {
@@ -55,7 +70,7 @@ const MainController = Class({
       }
     };
 
-    self.taskRunner.on("statusUpdate", statusUpdateHandler);
+    this.taskRunner.on("statusUpdate", statusUpdateHandler);
 
     this.taskRunner.run();
 

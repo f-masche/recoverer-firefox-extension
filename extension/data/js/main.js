@@ -1,5 +1,5 @@
 /*
-* This is the main content script for the recoverer application.
+* This is the content script for the extensions main page.
 */
 
 
