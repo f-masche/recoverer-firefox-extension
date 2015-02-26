@@ -1,3 +1,10 @@
+/*
+* This module contains the TaskRunner.
+* It runs a Task in a new browser Tab and gives feedback by events.
+* The main purpose of the TaskRunner is to keep the tasks itself smaller.
+* The Tasks are usually stateless, the TaskRunner is not.
+*/
+
 const { Class, mix } = require("sdk/core/heritage");
 const { EventTarget } = require("sdk/event/target");
 const { contract } = require("sdk/util/contract");
@@ -37,6 +44,18 @@ const TaskRunner = Class({
 
   extends: EventTarget,
 
+  /**
+  * Creates a new TaskRunner.
+  *
+  * @param {Object} options
+  *   {
+  *     task: {Task} The task to run
+  *     loginTab: {Tab} Tab where the logged in page is opened
+  *     userEmail: {String} Email of the user
+  *     emailSource: {EmailSource} An email source
+  *     captchaSolver: {CaptchaSolver} A captcha solver 
+  *   }
+  */
   initialize: function(options) {
     taskRunnerContract(options);
 
@@ -51,7 +70,17 @@ const TaskRunner = Class({
     this.captchaSolver = options.captchaSolver;
   },
 
+  /**
+  * Starts this TaskRunner.
+  * 
+  * @return {Promise} 
+  *   A promise that gets resolved when the task has been finished successfully.
+  *   Gets rejected if an error occurred.
+  */
   run: function() {
+    if(this.status) {
+      throw new Error("This task runner is already running");
+    }
 
     const self = this;
 
@@ -78,11 +107,18 @@ const TaskRunner = Class({
       });
   },
 
+  /**
+  * Sets the status and fires the `statusUpdate` event.
+  */
   _setStatus: function(status, message) {
     this.status = status;
     emit(this, "statusUpdate", status, message);
   },
 
+  /**
+  * First step of the password recovery.
+  * Calls the `task.resetPassword`  method.
+  */
   _resetPassword: function() {
     this._setStatus(EVENTS.resettingPassword);
 
@@ -93,6 +129,13 @@ const TaskRunner = Class({
     return this._scraper.run();
   },
 
+  /**
+  * Sets the new password.
+  * Calls the `task.setNewPassword` method.
+  *
+  * @return {Promise}
+  *  A promise that gets resolved on success or rejected if an error occurred.  
+  */
   _setNewPassword: function(email) {
 
     this._setStatus("settingNewPassword");
@@ -113,6 +156,14 @@ const TaskRunner = Class({
     }
   },
 
+  /**
+  * Starts the login.
+  * Calls the task.login method`.
+  * Opens the logged in page in the `loginTab`.
+  *
+  * @return {Promise}
+  *  A promise that gets resolved on success or rejected if an error occurred.
+  */
   _login: function() {
 
     const self = this;
@@ -131,6 +182,12 @@ const TaskRunner = Class({
     });
   },
 
+  /**
+  * Marks the email as read.
+  *
+  * @return {Promise}
+  *  A promise that gets resolved on success or rejected if an error occurred.
+  */
   _setEmailAsRead: function() {
     //if password link was used the email should be marked as read
     this._setStatus(EVENTS.updatingEmail);
@@ -138,6 +195,13 @@ const TaskRunner = Class({
     return this.emailSource.setEmailAsRead(this.email.original.id);
   },
 
+  /**
+  * Fetches the email.
+  *
+  * @return {Promise}
+  *   A promise that gets resolved with the email.
+  *   Gets rejected is no email was found.
+  */
   _getEmail: function() {
     this._setStatus(EVENTS.waitingForEmail);
     const filters = mix({in: "inbox", is: "unread"}, this.task.emailFilters);
@@ -145,6 +209,13 @@ const TaskRunner = Class({
     return this.emailSource.waitForEmail(filters);
   },
 
+  /**
+  * Extracts the link to set a new password from the email.
+  *
+  * @return {String}
+  *   The link. 
+  *   null if no link was found.
+  */
   _getResetLinkFromEmail: function() {
     const matches = this.email.text.match(this.task.resetLinkPattern);
 
